@@ -100,7 +100,7 @@ void loop() {
 void generateTetraminoe(uint8_t number) {
   switch (number) {
     case 0:
-      drawSquare(map_x, map_y);
+      updateTetraminoe(map_x, map_y, SQUARE);
       break;
     case 1:
       break;
@@ -111,7 +111,7 @@ void generateTetraminoe(uint8_t number) {
     case 4:
       break;
     case 5:
-      drawEs(map_x, map_y);
+      updateTetraminoe(map_x, map_y, ES[tetraminoe_variation]);
       break;
     case 6:
       break;
@@ -123,13 +123,13 @@ void generateTetraminoe(uint8_t number) {
   display.display();
 }
 
-void drawSquare(uint8_t _X_, uint8_t _Y_) {  
+void updateTetraminoe(uint8_t _X_, uint8_t _Y_, const uint8_t tetraminoe_coordinates[8]) {  
   // cancel last square
   if (_Y_ > 0) {        
     // conversion to real coordinates in pixels
     uint8_t x = 2 + old_map_x * SIZE;
     uint8_t y = 4 + old_map_y * SIZE;
-    cancelBlock(x, y, SQUARE);
+    cancelTetraminoe(x, y, tetraminoe_coordinates);
     old_map_x = _X_;
     old_map_y = _Y_;
   } 
@@ -137,16 +137,16 @@ void drawSquare(uint8_t _X_, uint8_t _Y_) {
   // conversion to real coordinates in pixels
   uint8_t x = 2 + _X_ * SIZE;
   uint8_t y = 4 + _Y_ * SIZE;
-  drawBlock(x, y, SQUARE);
+  drawTetraminoe(x, y, tetraminoe_coordinates);
   
   // update time
   last_time = millis(); 
   
   // handle stop tetraminoe
-  bool go_down = canGoDown(_X_, _Y_, SQUARE);
+  bool go_down = canGoDown(_X_, _Y_, tetraminoe_coordinates);
   if (!go_down) {
-    Serial.println("fine corsa");
-    printOnMap(_X_, _Y_, SQUARE);
+    Serial.println("reach last step down");
+    printOnMap(_X_, _Y_, tetraminoe_coordinates);
     
     map_x = 0;
     map_y = 0;
@@ -174,60 +174,18 @@ bool canGoDown(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
 void printOnMap(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
   for (uint8_t i = 0; i < 8; i += 2) {
     uint8_t var_x = x + pgm_read_byte(&tetraminoe_coordinates[i]);
-    Serial.print("x in map: ");
-    Serial.println(var_x);
-    uint8_t var_y = y + pgm_read_byte(&tetraminoe_coordinates[i + 1]);
-    Serial.print("y in map: ");
-    Serial.println(var_y);
-    
+    uint8_t var_y = y + pgm_read_byte(&tetraminoe_coordinates[i + 1]);    
     game_map[var_y][var_x] = 1;
   }
 }
-void drawEs(uint8_t _X_, uint8_t _Y_) {
-  // cancel last es
-  if (_Y_ > 0) {
-    uint8_t old_Y_ = _Y_ - 1;    
-    // conversion to real coordinates in pixels
-    uint8_t x = 2 + _X_ * SIZE;
-    uint8_t y = 4 + old_Y_ * SIZE;
-    cancelBlock(x, y, ES[0]); 
-  }
-
-  // conversion to real coordinates in pixels
-  uint8_t x = 2 + _X_ * SIZE;
-  uint8_t y = 4 + _Y_ * SIZE;
-
-  // draw new square
-  drawBlock(x, y, ES[0]);
-
-  // update time
-  last_time = millis(); 
-  
-  // handle stop tetraminoe
-  if (_Y_ > 16 || game_map[_Y_ + 2][_X_]) {
-    Serial.println("fine corsa");
-    game_map[_Y_][_X_ + 1] = 1;
-    game_map[_Y_+ 1][_X_ + 1] = 1;
-    game_map[_Y_ + 1][_X_ + 2] = 1;
-    game_map[_Y_ + 2][_X_ + 2] = 1;
-    
-    map_y = 0;
-    tetraminoe_number = 0;
-    return;
-  }
-
-  // increment axis y on game_map
-  map_y++;
-}
-
-void drawBlock(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
+void drawTetraminoe(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
   for (uint8_t i = 0; i < 8; i += 2) {
     uint8_t start_x = x + pgm_read_byte(&tetraminoe_coordinates[i]) * SIZE;
     uint8_t start_y = y + pgm_read_byte(&tetraminoe_coordinates[i + 1]) * SIZE;
     display.drawRect(start_x, start_y, SIZE, SIZE, WHITE);
   }
 }
-void cancelBlock(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
+void cancelTetraminoe(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
   for (uint8_t i = 0; i < 8; i += 2) {
     uint8_t start_x = x + pgm_read_byte(&tetraminoe_coordinates[i]) * SIZE;
     uint8_t start_y = y + pgm_read_byte(&tetraminoe_coordinates[i + 1]) * SIZE;
