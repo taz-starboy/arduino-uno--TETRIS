@@ -47,12 +47,12 @@ uint8_t game_map[20][10] = {
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
-const uint8_t SQUARE[8] PROGMEM = {0,0,1,0,0,1,1,1};
-const uint8_t ES[4][8] PROGMEM = {
+const uint8_t SQUARE[8] PROGMEM = {0, 0, 1, 0, 0, 1, 1, 1};
+const uint8_t ES[2][8] PROGMEM = {
   {0, 0, 0, 1, 1, 1, 1, 2},
-  {1, 0, 2, 0, 0, 1, 1, 1},
-  {0, 0, 0, 1, 1, 1, 2, 2},
-  {0, 2, 1, 2, 1, 2, 2, 1}
+  {1, 0, 2, 0, 0, 1, 1, 1}
+  // {0, 0, 0, 1, 1, 1, 2, 2},
+  // {0, 2, 1, 2, 1, 2, 2, 1}
 };
 
 
@@ -122,17 +122,10 @@ void generateTetraminoe(uint8_t number) {
   }
   display.display();
 }
-void incrementY() {
-  map_y = map_y < 18 ? map_y + 1 : 0;
-}
-uint8_t generateRandomNumber() {
-  return random(0, 7);
-}
-void drawSquare(uint8_t _X_, uint8_t _Y_) { 
-  
+
+void drawSquare(uint8_t _X_, uint8_t _Y_) {  
   // cancel last square
-  if (_Y_ > 0) {
-    //uint8_t old_Y_ = _Y_ - 1;    
+  if (_Y_ > 0) {        
     // conversion to real coordinates in pixels
     uint8_t x = 2 + old_map_x * SIZE;
     uint8_t y = 4 + old_map_y * SIZE;
@@ -144,15 +137,14 @@ void drawSquare(uint8_t _X_, uint8_t _Y_) {
   // conversion to real coordinates in pixels
   uint8_t x = 2 + _X_ * SIZE;
   uint8_t y = 4 + _Y_ * SIZE;
-
-  // draw new square
   drawBlock(x, y, SQUARE);
   
   // update time
   last_time = millis(); 
   
   // handle stop tetraminoe
-  if (_Y_ > 17 || game_map[_Y_ + 2][_X_]) {
+  bool go_down = canGoDown(_X_, _Y_, SQUARE);
+  if (!go_down) {
     Serial.println("fine corsa");
     printOnMap(_X_, _Y_, SQUARE);
     
@@ -168,6 +160,16 @@ void drawSquare(uint8_t _X_, uint8_t _Y_) {
 
   // increment axis y on game_map
   map_y++;  
+}
+bool canGoDown(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
+  uint8_t max_y = 0;
+  for (uint8_t i = 0; i < 8; i += 2) {
+    uint8_t x_value = x + pgm_read_byte(&tetraminoe_coordinates[i]);
+    uint8_t y_value = y + pgm_read_byte(&tetraminoe_coordinates[i + 1]);
+    if (y_value == 19) return false;
+    if (game_map[y_value + 1][x_value] == 1) return false;
+  }
+  return true;
 }
 void printOnMap(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
   for (uint8_t i = 0; i < 8; i += 2) {
@@ -231,4 +233,7 @@ void cancelBlock(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) 
     uint8_t start_y = y + pgm_read_byte(&tetraminoe_coordinates[i + 1]) * SIZE;
     display.drawRect(start_x, start_y, SIZE, SIZE, BLACK);
   }
+}
+uint8_t generateRandomNumber() {
+  return random(0, 7);
 }
