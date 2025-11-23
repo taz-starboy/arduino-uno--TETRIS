@@ -17,11 +17,15 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 uint32_t last_time = millis();
-uint8_t x_axis = 0;
-uint8_t y_axis = 0;
-uint8_t tetraminoe_number;
+uint8_t map_x = 0;
+uint8_t map_y = 0;
+uint8_t old_map_x = map_x;  // 0
+uint8_t old_map_y = map_y;  // 0
 
-bool game_map[20][10] = {
+uint8_t tetraminoe_number;
+uint8_t tetraminoe_variation = 0;
+
+uint8_t game_map[20][10] = {
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -43,14 +47,12 @@ bool game_map[20][10] = {
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
-const bool SQUARE[2][2] PROGMEM = {
-  {1, 1},
-  {1, 1}
-};
-const bool ES[3][3] PROGMEM = {
-  {0, 1, 0},
-  {0, 1, 1},
-  {0, 0, 1}
+const uint8_t SQUARE[8] PROGMEM = {0,0,1,0,0,1,1,1};
+const uint8_t ES[4][8] PROGMEM = {
+  {0, 0, 0, 1, 1, 1, 1, 2},
+  {1, 0, 2, 0, 0, 1, 1, 1},
+  {0, 0, 0, 1, 1, 1, 2, 2},
+  {0, 2, 1, 2, 1, 2, 2, 1}
 };
 
 
@@ -98,7 +100,7 @@ void loop() {
 void generateTetraminoe(uint8_t number) {
   switch (number) {
     case 0:
-      drawSquare(x_axis, y_axis);
+      drawSquare(map_x, map_y);
       break;
     case 1:
       break;
@@ -109,7 +111,7 @@ void generateTetraminoe(uint8_t number) {
     case 4:
       break;
     case 5:
-      drawEs(x_axis, y_axis);
+      drawEs(map_x, map_y);
       break;
     case 6:
       break;
@@ -121,7 +123,7 @@ void generateTetraminoe(uint8_t number) {
   display.display();
 }
 void incrementY() {
-  y_axis = y_axis < 18 ? y_axis + 1 : 0;
+  map_y = map_y < 18 ? map_y + 1 : 0;
 }
 uint8_t generateRandomNumber() {
   return random(0, 7);
@@ -130,14 +132,13 @@ void drawSquare(uint8_t _X_, uint8_t _Y_) {
   
   // cancel last square
   if (_Y_ > 0) {
-    uint8_t old_Y_ = _Y_ - 1;    
+    //uint8_t old_Y_ = _Y_ - 1;    
     // conversion to real coordinates in pixels
-    uint8_t x = 2 + _X_ * SIZE;
-    uint8_t y = 4 + old_Y_ * SIZE;
-    display.drawRect(x, y, SIZE, SIZE, BLACK);
-    display.drawRect(x + SIZE, y, SIZE, SIZE, BLACK);
-    display.drawRect(x, y + SIZE, SIZE, SIZE, BLACK);
-    display.drawRect(x + SIZE, y + SIZE, SIZE, SIZE, BLACK);  
+    uint8_t x = 2 + old_map_x * SIZE;
+    uint8_t y = 4 + old_map_y * SIZE;
+    cancelBlock(x, y, SQUARE);
+    old_map_x = _X_;
+    old_map_y = _Y_;
   } 
 
   // conversion to real coordinates in pixels
@@ -153,18 +154,32 @@ void drawSquare(uint8_t _X_, uint8_t _Y_) {
   // handle stop tetraminoe
   if (_Y_ > 17 || game_map[_Y_ + 2][_X_]) {
     Serial.println("fine corsa");
-    game_map[_Y_][_X_] = 1;
-    game_map[_Y_][_X_ + 1] = 1;
-    game_map[_Y_ + 1][_X_ + 1] = 1;
-    game_map[_Y_ + 1][_X_ + 1] = 1;
+    printOnMap(_X_, _Y_, SQUARE);
     
-    y_axis = 0;
+    map_x = 0;
+    map_y = 0;
+    old_map_x = map_x;
+    old_map_y = map_y;
+
     tetraminoe_number = 5;
+
     return;
   }
 
   // increment axis y on game_map
-  y_axis++;  
+  map_y++;  
+}
+void printOnMap(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
+  for (uint8_t i = 0; i < 8; i += 2) {
+    uint8_t var_x = x + pgm_read_byte(&tetraminoe_coordinates[i]);
+    Serial.print("x in map: ");
+    Serial.println(var_x);
+    uint8_t var_y = y + pgm_read_byte(&tetraminoe_coordinates[i + 1]);
+    Serial.print("y in map: ");
+    Serial.println(var_y);
+    
+    game_map[var_y][var_x] = 1;
+  }
 }
 void drawEs(uint8_t _X_, uint8_t _Y_) {
   // cancel last es
@@ -173,11 +188,7 @@ void drawEs(uint8_t _X_, uint8_t _Y_) {
     // conversion to real coordinates in pixels
     uint8_t x = 2 + _X_ * SIZE;
     uint8_t y = 4 + old_Y_ * SIZE;
-
-    display.drawRect(x + SIZE, y, SIZE, SIZE, BLACK);
-    display.drawRect(x + SIZE, y + SIZE, SIZE, SIZE, BLACK);
-    display.drawRect(x + SIZE * 2, y + SIZE, SIZE, SIZE, BLACK);
-    display.drawRect(x + SIZE * 2, y + SIZE * 2, SIZE, SIZE, BLACK); 
+    cancelBlock(x, y, ES[0]); 
   }
 
   // conversion to real coordinates in pixels
@@ -185,7 +196,7 @@ void drawEs(uint8_t _X_, uint8_t _Y_) {
   uint8_t y = 4 + _Y_ * SIZE;
 
   // draw new square
-  drawBlock2(x, y, ES);
+  drawBlock(x, y, ES[0]);
 
   // update time
   last_time = millis(); 
@@ -198,52 +209,26 @@ void drawEs(uint8_t _X_, uint8_t _Y_) {
     game_map[_Y_ + 1][_X_ + 2] = 1;
     game_map[_Y_ + 2][_X_ + 2] = 1;
     
-    y_axis = 0;
+    map_y = 0;
     tetraminoe_number = 0;
     return;
   }
 
   // increment axis y on game_map
-  y_axis++;
+  map_y++;
 }
 
-void drawBlock(uint8_t x, uint8_t y, const bool array[2][2]) {
-  for (uint8_t i = 0; i < 2; i++) {
-    // i = y
-    uint8_t addsizey = i * SIZE;
-
-    for (uint8_t j = 0; j < 2; j++) {
-      // j = x
-      uint8_t addsizex = j * SIZE;
-
-      if (pgm_read_byte(&(SQUARE[i][j]))) {
-        uint8_t start_x = x + addsizex;
-        uint8_t start_y = y + addsizey;
-        display.drawRect(start_x, start_y, SIZE, SIZE, WHITE);
-      }
-    }
+void drawBlock(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
+  for (uint8_t i = 0; i < 8; i += 2) {
+    uint8_t start_x = x + pgm_read_byte(&tetraminoe_coordinates[i]) * SIZE;
+    uint8_t start_y = y + pgm_read_byte(&tetraminoe_coordinates[i + 1]) * SIZE;
+    display.drawRect(start_x, start_y, SIZE, SIZE, WHITE);
   }
 }
-void drawBlock2(uint8_t x, uint8_t y, const bool array[3][3]) {
-  for (uint8_t i = 0; i < 3; i++) {
-    // i = y
-    uint8_t addsizey = i * SIZE;
-
-    for (uint8_t j = 0; j < 3; j++) {
-      // j = x
-      uint8_t addsizex = j * SIZE;
-
-      if (pgm_read_byte(&(ES[i][j]))) {
-        uint8_t start_x = x + addsizex;
-        uint8_t start_y = y + addsizey;
-
-        // Serial.print("X :");
-        // Serial.println(start_x);
-        // Serial.print("Y :");
-        // Serial.println(start_y);
-
-        display.drawRect(start_x, start_y, SIZE, SIZE, WHITE);
-      }
-    }
+void cancelBlock(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
+  for (uint8_t i = 0; i < 8; i += 2) {
+    uint8_t start_x = x + pgm_read_byte(&tetraminoe_coordinates[i]) * SIZE;
+    uint8_t start_y = y + pgm_read_byte(&tetraminoe_coordinates[i + 1]) * SIZE;
+    display.drawRect(start_x, start_y, SIZE, SIZE, BLACK);
   }
 }
