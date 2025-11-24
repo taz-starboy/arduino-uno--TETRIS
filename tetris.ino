@@ -5,7 +5,14 @@
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 
+// defining a grid 20x10 blocks (120x60 pixels)
+#define MARGIN_TOP 4
+#define MARGIN_LEFT 20
+
 #define BUTTON_DOWN 2
+#define BUTTON_LEFT 3
+#define BUTTON_RIGHT 4
+#define BUTTON_VARIATION 5
 #define BUZZER 13
 
 #define PAUSE 1000
@@ -50,7 +57,7 @@ uint8_t game_map[20][10] = {
 const uint8_t SQUARE[8] PROGMEM = {0, 0, 1, 0, 0, 1, 1, 1};
 const uint8_t ES[2][8] PROGMEM = {
   {0, 0, 0, 1, 1, 1, 1, 2},
-  {1, 0, 2, 0, 0, 1, 1, 1}
+  {1, 1, 2, 1, 0, 2, 1, 2}
   // {0, 0, 0, 1, 1, 1, 2, 2},
   // {0, 2, 1, 2, 1, 2, 2, 1}
 };
@@ -67,6 +74,9 @@ void setup() {
   }
 
   pinMode(BUTTON_DOWN, INPUT);
+  pinMode(BUTTON_LEFT, INPUT);
+  pinMode(BUTTON_RIGHT, INPUT);
+  pinMode(BUTTON_VARIATION, INPUT);
   pinMode(BUZZER, OUTPUT);  
     
   display.clearDisplay();
@@ -90,6 +100,21 @@ void loop() {
 
   // button down pressed
   if (digitalRead(BUTTON_DOWN)) {
+    delay(150);
+    generateTetraminoe(tetraminoe_number);
+  }
+  // button left pressed
+  if (digitalRead(BUTTON_LEFT)) {
+    delay(150);
+    generateTetraminoe(tetraminoe_number);
+  }
+  // button right pressed
+  if (digitalRead(BUTTON_RIGHT)) {
+    delay(150);
+    generateTetraminoe(tetraminoe_number);
+  }
+  // button varation pressed
+  if (digitalRead(BUTTON_VARIATION)) {
     delay(150);
     generateTetraminoe(tetraminoe_number);
   }
@@ -127,16 +152,16 @@ void updateTetraminoe(uint8_t _X_, uint8_t _Y_, const uint8_t tetraminoe_coordin
   // cancel last square
   if (_Y_ > 0) {        
     // conversion to real coordinates in pixels
-    uint8_t x = 2 + old_map_x * SIZE;
-    uint8_t y = 4 + old_map_y * SIZE;
+    uint8_t x = MARGIN_LEFT + old_map_x * SIZE;
+    uint8_t y = MARGIN_TOP + old_map_y * SIZE;
     cancelTetraminoe(x, y, tetraminoe_coordinates);
     old_map_x = _X_;
     old_map_y = _Y_;
   } 
 
   // conversion to real coordinates in pixels
-  uint8_t x = 2 + _X_ * SIZE;
-  uint8_t y = 4 + _Y_ * SIZE;
+  uint8_t x = MARGIN_LEFT + _X_ * SIZE;
+  uint8_t y = MARGIN_TOP + _Y_ * SIZE;  
   drawTetraminoe(x, y, tetraminoe_coordinates);
   
   // update time
