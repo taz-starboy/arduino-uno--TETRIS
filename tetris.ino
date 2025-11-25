@@ -12,7 +12,7 @@
 #define BUTTON_DOWN 2
 #define BUTTON_LEFT 3
 #define BUTTON_RIGHT 4
-#define BUTTON_VARIATION 5
+#define BUTTON_ROTATION 5
 #define BUZZER 13
 
 #define PAUSE 1000
@@ -30,7 +30,7 @@ uint8_t old_map_x = map_x;  // 0
 uint8_t old_map_y = map_y;  // 0
 
 uint8_t tetraminoe_number;
-uint8_t tetraminoe_variation = 0;
+uint8_t tetraminoe_rotation = 0;
 
 uint8_t game_map[20][10] = {
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 
@@ -73,12 +73,14 @@ void setup() {
     for(;;);
   }
 
+  // setting pins
   pinMode(BUTTON_DOWN, INPUT);
   pinMode(BUTTON_LEFT, INPUT);
   pinMode(BUTTON_RIGHT, INPUT);
-  pinMode(BUTTON_VARIATION, INPUT);
+  pinMode(BUTTON_ROTATION, INPUT);
   pinMode(BUZZER, OUTPUT);  
-    
+  
+
   display.clearDisplay();
   display.setRotation(1); // set display to vertical orientation  
 
@@ -93,35 +95,85 @@ void setup() {
 }
 
 void loop() {
-  
-  if ((millis() - last_time) >= PAUSE) {
-    generateTetraminoe(tetraminoe_number);   
+  /*
+    occorre passare tutte la variabili alle funzioni in modo che in futuro per separare la logica sia piu facile
+  */
+  // button varation pressed
+  if (digitalRead(BUTTON_ROTATION)) {
+    delay(150);    
+    rotateTetraminoe(map_x, map_y, tetraminoe_number, &tetraminoe_rotation);
+    // update time // VALUTARE SE METTERLO DIRETTAMENTE NELLA FUNZIONE DRAWTETRAMINOE
+    last_time = millis();
   }
 
+
+  if ((millis() - last_time) >= PAUSE) { // o il pulsante giu e stato premuto
+    generateTetraminoe(tetraminoe_number);
+    // qui e necessario sapere in che variante siamo
+    // che tipo di tetramino e
+    // calcolare se puo ancora andare giu  
+  }
   // button down pressed
   if (digitalRead(BUTTON_DOWN)) {
     delay(150);
     generateTetraminoe(tetraminoe_number);
   }
+  
   // button left pressed
-  if (digitalRead(BUTTON_LEFT)) {
-    delay(150);
-    generateTetraminoe(tetraminoe_number);
-  }
+  // if (digitalRead(BUTTON_LEFT)) {
+  //   delay(150);
+  //   bool go_left = canGoLeft(map_x, map_y, tetraminoe_number); // qui non so che tipo di tetramino si tratta
+  //   generateTetraminoe(tetraminoe_number);
+  // }
   // button right pressed
-  if (digitalRead(BUTTON_RIGHT)) {
-    delay(150);
-    generateTetraminoe(tetraminoe_number);
-  }
-  // button varation pressed
-  if (digitalRead(BUTTON_VARIATION)) {
-    delay(150);
-    generateTetraminoe(tetraminoe_number);
-  }
+  // if (digitalRead(BUTTON_RIGHT)) {
+  //   delay(150);
+  //   generateTetraminoe(tetraminoe_number);
+  // }  
 }
 
 
 // **** FUNCTIONS
+void rotateTetraminoe(uint8_t map_x, uint8_t map_y, uint8_t tetraminoe_number, uint8_t *tetraminoe_rotation) { // rotation occurs on same position
+  uint8_t rotation = *tetraminoe_rotation;
+  switch (tetraminoe_number) {
+    case 0: // square
+      // no need rotation
+      return;
+    case 1:
+      break;
+    case 2:
+      break;
+    case 3:
+      break;
+    case 4:
+      break;
+    case 5: // s right
+      rotation = rotation > 0 ? 0 : 1;
+      bool okToRotate = validateRotation(map_x, map_y, ES[rotation]);
+      if (okToRotate) {
+        *tetraminoe_rotation = rotation;
+        drawTetraminoe(map_x, map_y, ES[rotation][8]);
+      }
+      return;
+    case 6:
+      break;
+    case 7:
+      break;
+    default:
+      Serial.println(F("No match for a tetraminoe, impossible determine rotation."));
+  }  
+}
+bool validateRotation(uint8_t map_x, uint8_t map_y, const uint8_t tetraminoe_coordinates[8]) {
+  for (uint8_t i = 0; i < 8; i += 2) {
+    uint8_t x_value = map_x + pgm_read_byte(&tetraminoe_coordinates[i]);
+    uint8_t y_value = map_y + pgm_read_byte(&tetraminoe_coordinates[i + 1]);
+    if (x_value < 0) return false;
+    if (x_value > 9) return false;
+    if (game_map[y_value][x_value] == 1) return false;
+  }
+  return true;
+}
 void generateTetraminoe(uint8_t number) {
   switch (number) {
     case 0:
@@ -136,7 +188,7 @@ void generateTetraminoe(uint8_t number) {
     case 4:
       break;
     case 5:
-      updateTetraminoe(map_x, map_y, ES[tetraminoe_variation]);
+      updateTetraminoe(map_x, map_y, ES[tetraminoe_rotation]);
       break;
     case 6:
       break;
@@ -160,9 +212,9 @@ void updateTetraminoe(uint8_t _X_, uint8_t _Y_, const uint8_t tetraminoe_coordin
   } 
 
   // conversion to real coordinates in pixels
-  uint8_t x = MARGIN_LEFT + _X_ * SIZE;
-  uint8_t y = MARGIN_TOP + _Y_ * SIZE;  
-  drawTetraminoe(x, y, tetraminoe_coordinates);
+  // uint8_t x = MARGIN_LEFT + _X_ * SIZE;
+  // uint8_t y = MARGIN_TOP + _Y_ * SIZE;  
+  drawTetraminoe(_X_, _Y_, tetraminoe_coordinates);
   
   // update time
   last_time = millis(); 
@@ -179,6 +231,7 @@ void updateTetraminoe(uint8_t _X_, uint8_t _Y_, const uint8_t tetraminoe_coordin
     old_map_y = map_y;
 
     tetraminoe_number = 5;
+    tetraminoe_rotation = 0;
 
     return;
   }
@@ -186,8 +239,21 @@ void updateTetraminoe(uint8_t _X_, uint8_t _Y_, const uint8_t tetraminoe_coordin
   // increment axis y on game_map
   map_y++;  
 }
+// bool canGoLeft(uint8_t map_x, uint8_t map_y, const uint8_t tetraminoe_coordinates[8]) {
+//   uint8_t x = MARGIN_LEFT + _X_ * SIZE;
+//   uint8_t y = MARGIN_TOP + _Y_ * SIZE;
+  
+//   for (uint8_t i = 0; i < 8; i += 2) {
+//     uint8_t x_value = x + pgm_read_byte(&tetraminoe_coordinates[i);
+//     uint8_t y_value = y + pgm_read_byte(&tetraminoe_coordinates[i + 1]);
+//     if (x_value == 0) return false;
+//     if (game_map[y_value][x_value - 1] == 1) return false;
+//   }
+
+//   tetraminoe_rotation++;
+//   return true;
+// }
 bool canGoDown(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
-  uint8_t max_y = 0;
   for (uint8_t i = 0; i < 8; i += 2) {
     uint8_t x_value = x + pgm_read_byte(&tetraminoe_coordinates[i]);
     uint8_t y_value = y + pgm_read_byte(&tetraminoe_coordinates[i + 1]);
@@ -203,7 +269,9 @@ void printOnMap(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
     game_map[var_y][var_x] = 1;
   }
 }
-void drawTetraminoe(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
+void drawTetraminoe(uint8_t map_x, uint8_t map_y, const uint8_t tetraminoe_coordinates[8]) {
+  uint8_t x = MARGIN_LEFT + map_x * SIZE;
+  uint8_t y = MARGIN_TOP + map_y * SIZE;
   for (uint8_t i = 0; i < 8; i += 2) {
     uint8_t start_x = x + pgm_read_byte(&tetraminoe_coordinates[i]) * SIZE;
     uint8_t start_y = y + pgm_read_byte(&tetraminoe_coordinates[i + 1]) * SIZE;
