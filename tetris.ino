@@ -54,8 +54,8 @@ uint8_t game_map[20][10] = {
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
-const uint8_t SQUARE[8] PROGMEM = {0, 0, 1, 0, 0, 1, 1, 1};
-const uint8_t ES[2][8] PROGMEM = {
+const uint8_t TTM_SQUARE[8] PROGMEM = {0, 0, 1, 0, 0, 1, 1, 1};
+const uint8_t TTM_S[2][8] PROGMEM = {
   {0, 0, 0, 1, 1, 1, 1, 2},
   {1, 1, 2, 1, 0, 2, 1, 2}
 };
@@ -134,7 +134,7 @@ void loop() {
 // **** FUNCTIONS
 void rotateTetraminoe(uint8_t map_x, uint8_t map_y, uint8_t tetraminoe_number, uint8_t *tetraminoe_rotation) { // rotation occurs on same position
   switch (tetraminoe_number) {
-    case 0: // square
+    case 0: // TTM_SQUARE
       // no need rotation
       return;
     case 1:
@@ -147,12 +147,12 @@ void rotateTetraminoe(uint8_t map_x, uint8_t map_y, uint8_t tetraminoe_number, u
       break;
     case 5: // s right
       uint8_t new_rotation = *tetraminoe_rotation > 0 ? 0 : 1;
-      bool okToRotate = validateRotation(map_x, map_y, ES[new_rotation]);
+      bool okToRotate = validateRotation(map_x, map_y, TTM_S[new_rotation]);
       if (okToRotate) {
-        //cancelTetraminoe(map_x, map_y, ES[*tetraminoe_rotation]);
-        cancelTetraminoe(old_map_x, old_map_y, ES[*tetraminoe_rotation]);
+        //cancelTetraminoe(map_x, map_y, TTM_S[*tetraminoe_rotation]);
+        cancelTetraminoe(old_map_x, old_map_y, TTM_S[*tetraminoe_rotation]);
         *tetraminoe_rotation = new_rotation;
-        drawTetraminoe(old_map_x, old_map_y, ES[new_rotation]);
+        drawTetraminoe(old_map_x, old_map_y, TTM_S[new_rotation]);
       }
       break;
     case 6:
@@ -177,7 +177,7 @@ bool validateRotation(uint8_t map_x, uint8_t map_y, const uint8_t tetraminoe_coo
 void generateTetraminoe(uint8_t number) {
   switch (number) {
     case 0:
-      updateTetraminoe(map_x, map_y, SQUARE);
+      updateTetraminoe(map_x, map_y, TTM_SQUARE);
       break;
     case 1:
       break;
@@ -188,7 +188,7 @@ void generateTetraminoe(uint8_t number) {
     case 4:
       break;
     case 5:
-      updateTetraminoe(map_x, map_y, ES[tetraminoe_rotation]);
+      updateTetraminoe(map_x, map_y, TTM_S[tetraminoe_rotation]);
       break;
     case 6:
       break;
@@ -201,7 +201,7 @@ void generateTetraminoe(uint8_t number) {
 }
 
 void updateTetraminoe(uint8_t _X_, uint8_t _Y_, const uint8_t tetraminoe_coordinates[8]) { 
-  // cancel last square
+  // cancel last TTM_SQUARE
   if (_Y_ > 0) {
     cancelTetraminoe(old_map_x, old_map_y, tetraminoe_coordinates);
     old_map_x = _X_;
