@@ -30,7 +30,12 @@ uint8_t old_map_x = map_x;  // 0
 uint8_t old_map_y = map_y;  // 0
 
 uint8_t tetraminoe_number;
+struct Tetraminoe {
+  uint8_t current[8];
+};
+Tetraminoe tetraminoe;
 uint8_t tetraminoe_rotation = 0;
+
 
 uint8_t game_map[20][10] = {
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 
@@ -54,8 +59,8 @@ uint8_t game_map[20][10] = {
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
-const uint8_t TTM_SQUARE[8] PROGMEM = {0, 0, 1, 0, 0, 1, 1, 1};
-const uint8_t TTM_S[2][8] PROGMEM = {
+const uint8_t SQUARE_COORDINATES[8] PROGMEM = {0, 0, 1, 0, 0, 1, 1, 1};
+const uint8_t S_COORDINATES[2][8] PROGMEM = {
   {0, 0, 0, 1, 1, 1, 1, 2},
   {1, 1, 2, 1, 0, 2, 1, 2}
 };
@@ -86,6 +91,7 @@ void setup() {
 
   randomSeed(analogRead(A0)); // initialize random seed
   tetraminoe_number = generateRandomNumber(); // move to loop to avoid generating 0 as first
+  tetraminoe = getTetraminoeCoordinates(tetraminoe_number, tetraminoe_rotation);
   Serial.print("random number: ");
   Serial.println(tetraminoe_number);
 
@@ -132,9 +138,38 @@ void loop() {
 
 
 // **** FUNCTIONS
+Tetraminoe getTetraminoeCoordinates(uint8_t tetraminoe_number, uint8_t tetraminoe_rotation) {
+  // questa funzione ritorna solo l'array con la giusta rotazione
+  Tetraminoe tetraminoe;
+
+  switch (tetraminoe_number) {
+    case 0: // square      
+      memcpy_P(tetraminoe.current, SQUARE_COORDINATES, 8);
+      break;
+    case 1: // s
+      tetraminoe_rotation = tetraminoe_rotation > 0 ? 0 : 1;
+      memcpy_P(tetraminoe.current, S_COORDINATES[tetraminoe_rotation], 8);
+      break;
+    case 2:
+      break;
+    case 3:
+      break;
+    case 4:
+      break;
+    case 5:
+      break;
+    case 6:
+      break;
+    case 7:
+      break;
+    default:
+      Serial.println(F("No match for a tetraminoe."));
+  }
+  return tetraminoe;
+}
 void rotateTetraminoe(uint8_t map_x, uint8_t map_y, uint8_t tetraminoe_number, uint8_t *tetraminoe_rotation) { // rotation occurs on same position
   switch (tetraminoe_number) {
-    case 0: // TTM_SQUARE
+    case 0: // SQUARE_COORDINATES
       // no need rotation
       return;
     case 1:
@@ -147,12 +182,12 @@ void rotateTetraminoe(uint8_t map_x, uint8_t map_y, uint8_t tetraminoe_number, u
       break;
     case 5: // s right
       uint8_t new_rotation = *tetraminoe_rotation > 0 ? 0 : 1;
-      bool okToRotate = validateRotation(map_x, map_y, TTM_S[new_rotation]);
+      bool okToRotate = validateRotation(map_x, map_y, S_COORDINATES[new_rotation]);
       if (okToRotate) {
-        //cancelTetraminoe(map_x, map_y, TTM_S[*tetraminoe_rotation]);
-        cancelTetraminoe(old_map_x, old_map_y, TTM_S[*tetraminoe_rotation]);
+        //cancelTetraminoe(map_x, map_y, S_COORDINATES[*tetraminoe_rotation]);
+        cancelTetraminoe(old_map_x, old_map_y, S_COORDINATES[*tetraminoe_rotation]);
         *tetraminoe_rotation = new_rotation;
-        drawTetraminoe(old_map_x, old_map_y, TTM_S[new_rotation]);
+        drawTetraminoe(old_map_x, old_map_y, S_COORDINATES[new_rotation]);
       }
       break;
     case 6:
@@ -175,9 +210,10 @@ bool validateRotation(uint8_t map_x, uint8_t map_y, const uint8_t tetraminoe_coo
   return true;
 }
 void generateTetraminoe(uint8_t number) {
+  // questa funzione puo essere sostituita perche serve solo a definire il tipo
   switch (number) {
     case 0:
-      updateTetraminoe(map_x, map_y, TTM_SQUARE);
+      updateTetraminoe(map_x, map_y, SQUARE_COORDINATES);
       break;
     case 1:
       break;
@@ -188,7 +224,7 @@ void generateTetraminoe(uint8_t number) {
     case 4:
       break;
     case 5:
-      updateTetraminoe(map_x, map_y, TTM_S[tetraminoe_rotation]);
+      updateTetraminoe(map_x, map_y, S_COORDINATES[tetraminoe_rotation]);
       break;
     case 6:
       break;
@@ -201,7 +237,7 @@ void generateTetraminoe(uint8_t number) {
 }
 
 void updateTetraminoe(uint8_t _X_, uint8_t _Y_, const uint8_t tetraminoe_coordinates[8]) { 
-  // cancel last TTM_SQUARE
+  // cancel last SQUARE_COORDINATES
   if (_Y_ > 0) {
     cancelTetraminoe(old_map_x, old_map_y, tetraminoe_coordinates);
     old_map_x = _X_;
