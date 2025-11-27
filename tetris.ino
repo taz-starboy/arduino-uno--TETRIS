@@ -32,6 +32,7 @@ uint8_t old_map_y = map_y;  // 0
 uint8_t tetraminoe_number;
 struct Tetraminoe {
   uint8_t current[8];
+  uint8_t max_rotations;
 };
 Tetraminoe tetraminoe;
 uint8_t tetraminoe_rotation = 0;
@@ -95,7 +96,7 @@ void setup() {
   Serial.print("random number: ");
   Serial.println(tetraminoe_number);
 
-  generateTetraminoe(tetraminoe_number);
+  drawTetraminoe(map_x, map_y, tetraminoe.current);
 }
 
 void loop() {
@@ -110,17 +111,49 @@ void loop() {
     last_time = millis();
   }
 
-
+  // GO DOWN AUTOMATICALLY
   if ((millis() - last_time) >= PAUSE) { // o il pulsante giu e stato premuto
-    generateTetraminoe(tetraminoe_number);
-    // qui e necessario sapere in che variante siamo
-    // che tipo di tetramino e
-    // calcolare se puo ancora andare giu  
+    
+    // for (uint8_t i = 0; i < 8; i++) {
+    //   Serial.print(tetraminoe.current[i]);      
+    // }
+    // Serial.print("\n");
+
+    if (map_y > 0) {
+      cancelTetraminoe(old_map_x, old_map_y, tetraminoe.current);
+      old_map_x = map_x;
+      old_map_y = map_y;
+    }
+    //generateTetraminoe(tetraminoe_number);
+    // handle stop tetraminoe  
+    drawTetraminoe(map_x, map_y, tetraminoe.current);
+    
+    // update time
+    last_time = millis();
+    
+    bool go_down = canGoDown(map_x, map_y, tetraminoe.current);
+    if (!go_down) {
+      Serial.println("reach last step down");
+      printOnMap(map_x, map_y, tetraminoe.current);
+      
+      map_x = 0;
+      map_y = 0;
+      old_map_x = map_x;
+      old_map_y = map_y;
+
+      tetraminoe_number = 1;
+      tetraminoe_rotation = 0;
+
+      tetraminoe = getTetraminoeCoordinates(tetraminoe_number, tetraminoe_rotation);
+      //return;
+    } else {
+      map_y++;
+    }    
   }
   // button down pressed
   if (digitalRead(BUTTON_DOWN)) {
     delay(150);
-    generateTetraminoe(tetraminoe_number);
+    //generateTetraminoe(tetraminoe_number);
   }
   
   // button left pressed
@@ -145,10 +178,12 @@ Tetraminoe getTetraminoeCoordinates(uint8_t tetraminoe_number, uint8_t tetramino
   switch (tetraminoe_number) {
     case 0: // square      
       memcpy_P(tetraminoe.current, SQUARE_COORDINATES, 8);
+      tetraminoe.max_rotations = 0;
       break;
     case 1: // s
-      tetraminoe_rotation = tetraminoe_rotation > 0 ? 0 : 1;
+      //tetraminoe_rotation = tetraminoe_rotation > 0 ? 0 : 1;
       memcpy_P(tetraminoe.current, S_COORDINATES[tetraminoe_rotation], 8);
+      tetraminoe.max_rotations = 2;
       break;
     case 2:
       break;
@@ -209,67 +244,6 @@ bool validateRotation(uint8_t map_x, uint8_t map_y, const uint8_t tetraminoe_coo
   }
   return true;
 }
-void generateTetraminoe(uint8_t number) {
-  // questa funzione puo essere sostituita perche serve solo a definire il tipo
-  switch (number) {
-    case 0:
-      updateTetraminoe(map_x, map_y, SQUARE_COORDINATES);
-      break;
-    case 1:
-      break;
-    case 2:
-      break;
-    case 3:
-      break;
-    case 4:
-      break;
-    case 5:
-      updateTetraminoe(map_x, map_y, S_COORDINATES[tetraminoe_rotation]);
-      break;
-    case 6:
-      break;
-    case 7:
-      break;
-    default:
-      Serial.println(F("No match for a tetraminoe."));
-  }
-  display.display();
-}
-
-void updateTetraminoe(uint8_t _X_, uint8_t _Y_, const uint8_t tetraminoe_coordinates[8]) { 
-  // cancel last SQUARE_COORDINATES
-  if (_Y_ > 0) {
-    cancelTetraminoe(old_map_x, old_map_y, tetraminoe_coordinates);
-    old_map_x = _X_;
-    old_map_y = _Y_;
-  } 
-
-  // conversion to real coordinates in pixels  
-  drawTetraminoe(_X_, _Y_, tetraminoe_coordinates);
-  
-  // update time
-  last_time = millis(); 
-  
-  // handle stop tetraminoe
-  bool go_down = canGoDown(_X_, _Y_, tetraminoe_coordinates);
-  if (!go_down) {
-    Serial.println("reach last step down");
-    printOnMap(_X_, _Y_, tetraminoe_coordinates);
-    
-    map_x = 0;
-    map_y = 0;
-    old_map_x = map_x;
-    old_map_y = map_y;
-
-    tetraminoe_number = 5;
-    tetraminoe_rotation = 0;
-
-    return;
-  }
-
-  // increment axis y on game_map
-  map_y++;  
-}
 // bool canGoLeft(uint8_t map_x, uint8_t map_y, const uint8_t tetraminoe_coordinates[8]) {
 //   uint8_t x = HORIZONTAL_MARGIN_PIXELS + _X_ * SIZE;
 //   uint8_t y = VERTICAL_MARGIN_PIXELS + _Y_ * SIZE;
@@ -286,8 +260,8 @@ void updateTetraminoe(uint8_t _X_, uint8_t _Y_, const uint8_t tetraminoe_coordin
 // }
 bool canGoDown(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
   for (uint8_t i = 0; i < 8; i += 2) {
-    uint8_t x_value = x + pgm_read_byte(&tetraminoe_coordinates[i]);
-    uint8_t y_value = y + pgm_read_byte(&tetraminoe_coordinates[i + 1]);
+    uint8_t x_value = x + tetraminoe_coordinates[i];
+    uint8_t y_value = y + tetraminoe_coordinates[i + 1];
     if (y_value == 19) return false;
     if (game_map[y_value + 1][x_value] == 1) return false;
   }
@@ -295,8 +269,8 @@ bool canGoDown(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
 }
 void printOnMap(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
   for (uint8_t i = 0; i < 8; i += 2) {
-    uint8_t var_x = x + pgm_read_byte(&tetraminoe_coordinates[i]);
-    uint8_t var_y = y + pgm_read_byte(&tetraminoe_coordinates[i + 1]);    
+    uint8_t var_x = x + tetraminoe_coordinates[i];
+    uint8_t var_y = y + tetraminoe_coordinates[i + 1];    
     game_map[var_y][var_x] = 1;
   }
 }
@@ -305,18 +279,19 @@ void drawTetraminoe(uint8_t map_x, uint8_t map_y, const uint8_t tetraminoe_coord
   uint8_t x = HORIZONTAL_MARGIN_PIXELS + map_x * SIZE;
   uint8_t y = VERTICAL_MARGIN_PIXELS + map_y * SIZE;
   for (uint8_t i = 0; i < 8; i += 2) {
-    uint8_t start_x = x + pgm_read_byte(&tetraminoe_coordinates[i]) * SIZE;
-    uint8_t start_y = y + pgm_read_byte(&tetraminoe_coordinates[i + 1]) * SIZE;
+    uint8_t start_x = x + tetraminoe_coordinates[i] * SIZE;
+    uint8_t start_y = y + tetraminoe_coordinates[i + 1] * SIZE;
     display.drawRect(start_x, start_y, SIZE, SIZE, WHITE);
   }
+  display.display();
 }
 void cancelTetraminoe(uint8_t map_x, uint8_t map_y, const uint8_t tetraminoe_coordinates[8]) {
   // conversion to real coordinates in pixels
   uint8_t x = HORIZONTAL_MARGIN_PIXELS + map_x * SIZE;
   uint8_t y = VERTICAL_MARGIN_PIXELS + map_y * SIZE;  
   for (uint8_t i = 0; i < 8; i += 2) {
-    uint8_t start_x = x + pgm_read_byte(&tetraminoe_coordinates[i]) * SIZE;
-    uint8_t start_y = y + pgm_read_byte(&tetraminoe_coordinates[i + 1]) * SIZE;
+    uint8_t start_x = x + tetraminoe_coordinates[i] * SIZE;
+    uint8_t start_y = y + tetraminoe_coordinates[i + 1] * SIZE;
     display.drawRect(start_x, start_y, SIZE, SIZE, BLACK);
   }
 }
