@@ -67,7 +67,7 @@ const uint8_t S_COORDINATES[2][8] PROGMEM = {
 };
 
 
-// **** START
+// **** START ****
 void setup() {
   Serial.begin(9600);
 
@@ -84,7 +84,7 @@ void setup() {
   pinMode(BUTTON_ROTATION, INPUT);
   pinMode(BUZZER, OUTPUT);  
   
-
+  // setting and update display
   display.clearDisplay();
   display.setRotation(1); // set display to vertical orientation  
 
@@ -93,21 +93,18 @@ void setup() {
   randomSeed(analogRead(A0)); // initialize random seed
   tetraminoe_number = generateRandomNumber(); // move to loop to avoid generating 0 as first
   tetraminoe = getTetraminoeCoordinates(tetraminoe_number, tetraminoe_rotation);
-  Serial.print("random number: ");
-  Serial.println(tetraminoe_number);
+  // Serial.print("random number: ");
+  // Serial.println(tetraminoe_number);
 
   drawTetraminoe(map_x, map_y, tetraminoe.current);
 }
 
 void loop() {
-  /*
-    occorre passare tutte la variabili alle funzioni in modo che in futuro per separare la logica sia piu facile
-  */
-  // button varation pressed
+  
+  // ROTATION
   if (digitalRead(BUTTON_ROTATION)) {
-    delay(150);   
-    rotateTetraminoe(map_x, map_y, tetraminoe_number, &tetraminoe_rotation);
-    // update time // VALUTARE SE METTERLO DIRETTAMENTE NELLA FUNZIONE DRAWTETRAMINOE
+    delay(150);
+    tetraminoe = rotateTetraminoe(map_x, map_y, tetraminoe, tetraminoe_number, &tetraminoe_rotation);
     last_time = millis();
   }
 
@@ -124,7 +121,6 @@ void loop() {
       old_map_x = map_x;
       old_map_y = map_y;
     }
-    //generateTetraminoe(tetraminoe_number);
     // handle stop tetraminoe  
     drawTetraminoe(map_x, map_y, tetraminoe.current);
     
@@ -150,10 +146,38 @@ void loop() {
       map_y++;
     }    
   }
-  // button down pressed
+
+  // BUTTON DOWN
   if (digitalRead(BUTTON_DOWN)) {
     delay(150);
-    //generateTetraminoe(tetraminoe_number);
+    if (map_y > 0) {
+      cancelTetraminoe(old_map_x, old_map_y, tetraminoe.current);
+      old_map_x = map_x;
+      old_map_y = map_y;
+    } 
+    drawTetraminoe(map_x, map_y, tetraminoe.current);
+    
+    // update time
+    last_time = millis();
+    
+    bool go_down = canGoDown(map_x, map_y, tetraminoe.current);
+    if (!go_down) {
+      Serial.println("reach last step down");
+      printOnMap(map_x, map_y, tetraminoe.current);
+      
+      map_x = 0;
+      map_y = 0;
+      old_map_x = map_x;
+      old_map_y = map_y;
+
+      tetraminoe_number = 1;
+      tetraminoe_rotation = 0;
+
+      tetraminoe = getTetraminoeCoordinates(tetraminoe_number, tetraminoe_rotation);
+      //return;
+    } else {
+      map_y++;
+    }
   }
   
   // button left pressed
@@ -170,9 +194,8 @@ void loop() {
 }
 
 
-// **** FUNCTIONS
-Tetraminoe getTetraminoeCoordinates(uint8_t tetraminoe_number, uint8_t tetraminoe_rotation) {
-  // questa funzione ritorna solo l'array con la giusta rotazione
+// **** FUNCTIONS ****
+Tetraminoe getTetraminoeCoordinates(uint8_t tetraminoe_number, uint8_t tetraminoe_rotation) { // questa funzione ritorna solo l'array con la giusta rotazione
   Tetraminoe tetraminoe;
 
   switch (tetraminoe_number) {
@@ -181,7 +204,6 @@ Tetraminoe getTetraminoeCoordinates(uint8_t tetraminoe_number, uint8_t tetramino
       tetraminoe.max_rotations = 0;
       break;
     case 1: // s
-      //tetraminoe_rotation = tetraminoe_rotation > 0 ? 0 : 1;
       memcpy_P(tetraminoe.current, S_COORDINATES[tetraminoe_rotation], 8);
       tetraminoe.max_rotations = 2;
       break;
@@ -202,42 +224,27 @@ Tetraminoe getTetraminoeCoordinates(uint8_t tetraminoe_number, uint8_t tetramino
   }
   return tetraminoe;
 }
-void rotateTetraminoe(uint8_t map_x, uint8_t map_y, uint8_t tetraminoe_number, uint8_t *tetraminoe_rotation) { // rotation occurs on same position
-  switch (tetraminoe_number) {
-    case 0: // SQUARE_COORDINATES
-      // no need rotation
-      return;
-    case 1:
-      break;
-    case 2:
-      break;
-    case 3:
-      break;
-    case 4:
-      break;
-    case 5: // s right
-      uint8_t new_rotation = *tetraminoe_rotation > 0 ? 0 : 1;
-      bool okToRotate = validateRotation(map_x, map_y, S_COORDINATES[new_rotation]);
-      if (okToRotate) {
-        //cancelTetraminoe(map_x, map_y, S_COORDINATES[*tetraminoe_rotation]);
-        cancelTetraminoe(old_map_x, old_map_y, S_COORDINATES[*tetraminoe_rotation]);
-        *tetraminoe_rotation = new_rotation;
-        drawTetraminoe(old_map_x, old_map_y, S_COORDINATES[new_rotation]);
-      }
-      break;
-    case 6:
-      break;
-    case 7:
-      break;
-    default:
-      Serial.println(F("No match for a tetraminoe, impossible determine rotation."));
+
+Tetraminoe rotateTetraminoe(uint8_t map_x, uint8_t map_y, Tetraminoe tetraminoe, uint8_t tetraminoe_number, uint8_t *tetraminoe_rotation) { // rotation occurs on same position 
+  uint8_t new_rotation = *tetraminoe_rotation;
+  new_rotation++;
+
+  if (new_rotation >= tetraminoe.max_rotations) new_rotation = 0;
+
+  Tetraminoe turned_tetraminoe = getTetraminoeCoordinates(tetraminoe_number, new_rotation);
+  bool okToRotate = validateRotation(map_x, map_y, turned_tetraminoe.current);
+  if (okToRotate) {
+    cancelTetraminoe(old_map_x, old_map_y, tetraminoe.current);
+    drawTetraminoe(old_map_x, old_map_y, turned_tetraminoe.current);
+    *tetraminoe_rotation = new_rotation;    
+    return turned_tetraminoe;
   }
-  display.display(); 
+  return tetraminoe; 
 }
 bool validateRotation(uint8_t map_x, uint8_t map_y, const uint8_t tetraminoe_coordinates[8]) {
   for (uint8_t i = 0; i < 8; i += 2) {
-    uint8_t x_value = map_x + pgm_read_byte(&tetraminoe_coordinates[i]);
-    uint8_t y_value = map_y + pgm_read_byte(&tetraminoe_coordinates[i + 1]);
+    uint8_t x_value = map_x + tetraminoe_coordinates[i];
+    uint8_t y_value = map_y + tetraminoe_coordinates[i + 1];
     if (x_value < 0) return false;
     if (x_value > 9) return false;
     if (game_map[y_value][x_value] == 1) return false;
