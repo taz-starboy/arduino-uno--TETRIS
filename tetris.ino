@@ -67,6 +67,10 @@ const uint8_t S_COORDINATES[2][8] PROGMEM = {
   {0, 0, 0, 1, 1, 1, 1, 2},
   {1, 1, 2, 1, 0, 2, 1, 2}
 };
+const uint8_t Z_COORDINATES[2][8] PROGMEM = {
+  {1, 0, 0, 1, 1, 1, 0, 2},
+  {0, 1, 1, 1, 1, 2, 2, 2}
+};
 
 uint32_t last_time = millis();
 
@@ -173,7 +177,7 @@ void loop() {
       old_map_x = map_x;
       old_map_y = map_y;
 
-      tetraminoe_number = 1;
+      tetraminoe_number = 2;
       tetraminoe_rotation = 0;
 
       tetraminoe = getTetraminoeCoordinates(tetraminoe_number, tetraminoe_rotation);
@@ -197,7 +201,6 @@ void loop() {
   // BUTTON RIGHT
   if (digitalRead(BUTTON_RIGHT)) {
     delay(150);
-    //if (map_x > 7) return;
     bool go_right = canGoRight(map_x, map_y, tetraminoe.current, game_map);
     if (!go_right) return;
     cancelTetraminoe(old_map_x, old_map_y, tetraminoe.current);
@@ -223,6 +226,8 @@ Tetraminoe getTetraminoeCoordinates(uint8_t tetraminoe_number, uint8_t tetramino
       tetraminoe.max_rotations = 2;
       break;
     case 2:
+      memcpy_P(tetraminoe.current, Z_COORDINATES[tetraminoe_rotation], 8);
+      tetraminoe.max_rotations = 2;
       break;
     case 3:
       break;
