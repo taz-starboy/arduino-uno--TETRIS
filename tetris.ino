@@ -39,7 +39,6 @@ Tetraminoe tetraminoe;
 uint8_t tetraminoe_number;
 uint8_t tetraminoe_rotation = 0;
 
-
 uint8_t game_map[20][10] = {
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -70,6 +69,28 @@ const uint8_t S_COORDINATES[2][8] PROGMEM = {
 const uint8_t Z_COORDINATES[2][8] PROGMEM = {
   {1, 0, 0, 1, 1, 1, 0, 2},
   {0, 1, 1, 1, 1, 2, 2, 2}
+};
+const uint8_t L_COORDINATES[4][8] PROGMEM = {
+  {0, 0, 0, 1, 0, 2, 1, 2},
+  {0, 2, 1, 2, 2, 2, 2, 1},
+  {0, 0, 1, 0, 1, 1, 1, 2},
+  {0, 1, 1, 1, 2, 1, 0, 2}
+};
+const uint8_t J_COORDINATES[4][8] PROGMEM = {
+  {1, 0, 1, 1, 1, 2, 0, 2},
+  {0, 1, 1, 1, 1, 2, 2, 2},
+  {0, 0, 1, 0, 0, 1, 0, 2},
+  {0, 1, 0, 2, 1, 2, 2, 2}
+};
+const uint8_t T_COORDINATES[4][8] PROGMEM = {
+  {1, 1, 0, 2, 1, 2, 2, 2},
+  {2, 0, 1, 1, 2, 1, 2, 2},
+  {0, 0, 1, 0, 2, 0, 1, 1},
+  {0, 0, 0, 1, 1, 1, 0, 2}
+};
+const uint8_t I_COORDINATES[2][8] PROGMEM = {
+  {0, 0, 0, 1, 0, 2, 0, 3},
+  {0, 3, 1, 3, 2, 3, 3, 3}
 };
 
 uint32_t last_time = millis();
@@ -136,7 +157,7 @@ void loop() {
     
     bool go_down = canGoFurtherDown(map_x, map_y, tetraminoe.current);
     if (!go_down) {
-      Serial.println("reach last step down");
+      Serial.println(F("reach last step down"));
       printOnMap(map_x, map_y, tetraminoe.current, game_map);
       
       map_x = START_X;
@@ -144,7 +165,7 @@ void loop() {
       old_map_x = map_x;
       old_map_y = map_y;
 
-      tetraminoe_number = 1;
+      tetraminoe_number = generateRandomNumber();;
       tetraminoe_rotation = 0;
 
       tetraminoe = getTetraminoeCoordinates(tetraminoe_number, tetraminoe_rotation);
@@ -169,7 +190,7 @@ void loop() {
     
     bool go_down = canGoFurtherDown(map_x, map_y, tetraminoe.current);
     if (!go_down) {
-      Serial.println("reach last step down");
+      Serial.println(F("reach last step down"));
       printOnMap(map_x, map_y, tetraminoe.current, game_map);
       
       map_x = START_X;
@@ -177,7 +198,7 @@ void loop() {
       old_map_x = map_x;
       old_map_y = map_y;
 
-      tetraminoe_number = 2;
+      tetraminoe_number = generateRandomNumber();
       tetraminoe_rotation = 0;
 
       tetraminoe = getTetraminoeCoordinates(tetraminoe_number, tetraminoe_rotation);
@@ -230,14 +251,20 @@ Tetraminoe getTetraminoeCoordinates(uint8_t tetraminoe_number, uint8_t tetramino
       tetraminoe.max_rotations = 2;
       break;
     case 3:
+      memcpy_P(tetraminoe.current, L_COORDINATES[tetraminoe_rotation], 8);
+      tetraminoe.max_rotations = 4;
       break;
     case 4:
+      memcpy_P(tetraminoe.current, J_COORDINATES[tetraminoe_rotation], 8);
+      tetraminoe.max_rotations = 4;
       break;
     case 5:
+      memcpy_P(tetraminoe.current, T_COORDINATES[tetraminoe_rotation], 8);
+      tetraminoe.max_rotations = 4;
       break;
     case 6:
-      break;
-    case 7:
+      memcpy_P(tetraminoe.current, I_COORDINATES[tetraminoe_rotation], 8);
+      tetraminoe.max_rotations = 2;
       break;
     default:
       Serial.println(F("No match for a tetraminoe."));
