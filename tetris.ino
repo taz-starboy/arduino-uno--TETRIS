@@ -11,8 +11,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // defining a grid 20x10 blocks (6*20) (6*10) (120x60 pixels)
 // tetraminoe starting coordinates in pixels
-#define VERTICAL_MARGIN_PIXELS 4
 #define HORIZONTAL_MARGIN_PIXELS 2
+#define VERTICAL_MARGIN_PIXELS 4
 
 #define BUTTON_DOWN 2
 #define BUTTON_LEFT 3
@@ -24,11 +24,11 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 #define SIZE 6
 
-#define START_X 4
-#define START_Y 0
+#define START_MAP_X 4
+#define START_MAP_Y 4
 
-uint8_t map_x = START_X;
-uint8_t map_y = START_Y;
+uint8_t map_x = START_MAP_X;
+uint8_t map_y = START_MAP_Y;
 uint8_t old_map_x = map_x;  // 0
 uint8_t old_map_y = map_y;  // 0
 
@@ -118,12 +118,16 @@ void setup() {
   display.clearDisplay();
   display.setRotation(1); // set display to vertical orientation  
 
-  display.drawRect(1, 3, 62, 122, WHITE); // draw game table
+  display.drawRect(HORIZONTAL_MARGIN_PIXELS - 1, VERTICAL_MARGIN_PIXELS - 1, 62, 122, WHITE); // draw game table
+  display.drawRect(HORIZONTAL_MARGIN_PIXELS - 1, VERTICAL_MARGIN_PIXELS - 1, 62, START_MAP_Y * SIZE + 1, WHITE); // draw game table
 
   randomSeed(analogRead(A0)); // initialize random seed
   tetraminoe_number = generateRandomNumber(); // move to loop to avoid generating 0 as first
   tetraminoe = getTetraminoeCoordinates(tetraminoe_number, tetraminoe_rotation);
 
+  display.setCursor(5, 5);
+  display.setTextColor(WHITE);
+  display.print("points");
   drawTetraminoe(map_x, map_y, tetraminoe.current);
 }
 
@@ -153,8 +157,8 @@ void loop() {
     if (!go_down) {
       printOnMap(map_x, map_y, tetraminoe.current, game_map);
       
-      map_x = START_X;
-      map_y = START_Y;
+      map_x = START_MAP_X;
+      map_y = START_MAP_Y;
       old_map_x = map_x;
       old_map_y = map_y;
 
@@ -185,8 +189,8 @@ void loop() {
     if (!go_down) {
       printOnMap(map_x, map_y, tetraminoe.current, game_map);
       
-      map_x = START_X;
-      map_y = START_Y;
+      map_x = START_MAP_X;
+      map_y = START_MAP_Y;
       old_map_x = map_x;
       old_map_y = map_y;
 
@@ -359,11 +363,11 @@ void checkCompleteRow(uint8_t game_map[20][10]) {
   }
 }
 void cancelRow(uint8_t row_complete, uint8_t game_map[20][10]) {
-  for (int8_t i = row_complete; i > 0; i--) {
+  for (uint8_t i = row_complete; i > START_MAP_Y; i--) {
     memcpy(game_map[i], game_map[i - 1], 10 * sizeof(uint8_t));
     printBlocks(i, game_map[i]);
   }
-  memset(game_map[0], 0, 10 * sizeof(uint8_t));
+  memset(game_map[START_MAP_Y], 0, 10 * sizeof(uint8_t));
 }
 void printBlocks(uint8_t row_number, uint8_t row[10]) {
   uint8_t y = VERTICAL_MARGIN_PIXELS + row_number * SIZE;
