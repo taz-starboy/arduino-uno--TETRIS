@@ -85,7 +85,8 @@ const uint8_t J_COORDINATES[4][8] PROGMEM = {
 };
 const uint8_t T_COORDINATES[4][8] PROGMEM = {
   {1, 1, 0, 2, 1, 2, 2, 2},
-  {2, 0, 1, 1, 2, 1, 2, 2},
+  //{2, 0, 1, 1, 2, 1, 2, 2},
+  {0, 1, 1, 0, 1, 1, 1, 2},
   {0, 0, 1, 0, 2, 0, 1, 1},
   {0, 0, 0, 1, 1, 1, 0, 2}
 };
@@ -122,8 +123,6 @@ void setup() {
   randomSeed(analogRead(A0)); // initialize random seed
   tetraminoe_number = generateRandomNumber(); // move to loop to avoid generating 0 as first
   tetraminoe = getTetraminoeCoordinates(tetraminoe_number, tetraminoe_rotation);
-  // Serial.print("random number: ");
-  // Serial.println(tetraminoe_number);
 
   drawTetraminoe(map_x, map_y, tetraminoe.current);
 }
@@ -152,7 +151,6 @@ void loop() {
     
     bool go_down = canGoFurtherDown(map_x, map_y, tetraminoe.current);
     if (!go_down) {
-      //Serial.println(F("reach last step down"));
       printOnMap(map_x, map_y, tetraminoe.current, game_map);
       
       map_x = START_X;
@@ -185,7 +183,6 @@ void loop() {
     
     bool go_down = canGoFurtherDown(map_x, map_y, tetraminoe.current);
     if (!go_down) {
-      //Serial.println(F("reach last step down"));
       printOnMap(map_x, map_y, tetraminoe.current, game_map);
       
       map_x = START_X;
@@ -205,7 +202,7 @@ void loop() {
   // BUTTON LEFT
   if (digitalRead(BUTTON_LEFT)) {
     delay(150);    
-    bool go_left = canGoLeft(map_x, map_y, tetraminoe.current, game_map);
+    bool go_left = canGoLeft(map_x, map_y, tetraminoe.current, game_map);    
     if (!go_left) return;
     cancelTetraminoe(old_map_x, old_map_y, tetraminoe.current);
     map_x--;
