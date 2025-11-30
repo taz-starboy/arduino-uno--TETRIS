@@ -120,7 +120,7 @@ void setup() {
   display.drawRect(1, 3, 62, 122, WHITE); // draw game table
 
   randomSeed(analogRead(A0)); // initialize random seed
-  tetraminoe_number = 0;//generateRandomNumber(); // move to loop to avoid generating 0 as first
+  tetraminoe_number = generateRandomNumber(); // move to loop to avoid generating 0 as first
   tetraminoe = getTetraminoeCoordinates(tetraminoe_number, tetraminoe_rotation);
   // Serial.print("random number: ");
   // Serial.println(tetraminoe_number);
@@ -139,12 +139,6 @@ void loop() {
 
   // GO DOWN AUTOMATICALLY
   if ((millis() - last_time) >= PAUSE) { // o il pulsante giu e stato premuto
-    
-    // for (uint8_t i = 0; i < 8; i++) {
-    //   Serial.print(tetraminoe.current[i]);      
-    // }
-    // Serial.print("\n");
-
     if (map_y > 0) {
       cancelTetraminoe(old_map_x, old_map_y, tetraminoe.current);
       old_map_x = map_x;
@@ -158,7 +152,7 @@ void loop() {
     
     bool go_down = canGoFurtherDown(map_x, map_y, tetraminoe.current);
     if (!go_down) {
-      Serial.println(F("reach last step down"));
+      //Serial.println(F("reach last step down"));
       printOnMap(map_x, map_y, tetraminoe.current, game_map);
       
       map_x = START_X;
@@ -166,7 +160,7 @@ void loop() {
       old_map_x = map_x;
       old_map_y = map_y;
 
-      tetraminoe_number = 0;//generateRandomNumber();;
+      tetraminoe_number = generateRandomNumber();;
       tetraminoe_rotation = 0;
 
       tetraminoe = getTetraminoeCoordinates(tetraminoe_number, tetraminoe_rotation);
@@ -191,7 +185,7 @@ void loop() {
     
     bool go_down = canGoFurtherDown(map_x, map_y, tetraminoe.current);
     if (!go_down) {
-      Serial.println(F("reach last step down"));
+      //Serial.println(F("reach last step down"));
       printOnMap(map_x, map_y, tetraminoe.current, game_map);
       
       map_x = START_X;
@@ -199,7 +193,7 @@ void loop() {
       old_map_x = map_x;
       old_map_y = map_y;
 
-      tetraminoe_number = 0;//generateRandomNumber();
+      tetraminoe_number = generateRandomNumber();
       tetraminoe_rotation = 0;
 
       tetraminoe = getTetraminoeCoordinates(tetraminoe_number, tetraminoe_rotation);
@@ -232,23 +226,8 @@ void loop() {
     old_map_y = map_y;
   }
 
-  // void printBlocks() {
-  //   uint8_t x = START_X + i * SIZE;
-  //   uint8_t y = START_Y * SIZE;
-  //   for (uint8_t i = 0; i < 10; i++) {
-  //     uint8_t x = START_X + i * SIZE;
-  //     if (row[i] == 1) {      
-  //       display.drawRect(x, y, SIZE, SIZE, WHITE);
-  //       continue;
-  //     }
-  //     display.drawRect(x, y, SIZE, SIZE, BLACK);
-  //   }
-  // }
-  int8_t n_row_complete = checkCompleteRow(game_map);
-  //if (n_row_complete < 0) return;
-  //Serial.println("cancello riga");
-  //cancelRow(n_row_complete, game_map);
-  //printBlocks(game_map);
+  // CHECK FOR COMPLETE ROWS
+  checkCompleteRow(game_map);
 }
 
 
@@ -374,33 +353,20 @@ void cancelTetraminoe(uint8_t map_x, uint8_t map_y, const uint8_t tetraminoe_coo
     display.drawRect(start_x, start_y, SIZE, SIZE, BLACK);
   }
 }
-int8_t checkCompleteRow(uint8_t game_map[20][10]) {
+void checkCompleteRow(uint8_t game_map[20][10]) {
   for (int8_t i = 19; i >= 0; i--) {
     for (uint8_t j = 0; j < 10; j++) {
       if (game_map[i][j] == 0) break;
-      //if (j == 9) return i;
-      if (j == 9) {
-        cancelRow(i, game_map);
-      } 
+      if (j == 9) cancelRow(i, game_map);
     }    
   }
-  return -1;
 }
 void cancelRow(uint8_t row_complete, uint8_t game_map[20][10]) {
   for (int8_t i = row_complete; i > 0; i--) {
     memcpy(game_map[i], game_map[i - 1], 10 * sizeof(uint8_t));
-    printBlocks(row_complete, game_map[i]);
+    printBlocks(i, game_map[i]);
   }
   memset(game_map[0], 0, 10 * sizeof(uint8_t));
-  //display.display();
-
-  // for (int i = 0; i<20; i++) {
-  //   for (int j = 0; j<10; j++) {
-  //     Serial.print(game_map[i][j]);
-  //   }
-  //   Serial.print("\n");
-  // }
-  
 }
 void printBlocks(uint8_t row_number, uint8_t row[10]) {
   uint8_t y = VERTICAL_MARGIN_PIXELS + row_number * SIZE;
@@ -413,17 +379,6 @@ void printBlocks(uint8_t row_number, uint8_t row[10]) {
     display.drawRect(x, y, SIZE, SIZE, BLACK);
   }
 }
-// void printBlocks(uint8_t game_map[20][10]) {
-//   uint8_t y = VERTICAL_MARGIN_PIXELS * SIZE;
-//   uint8_t x = HORIZONTAL_MARGIN_PIXELS * SIZE;
-//   for (int8_t i = 19; i >= 0; i--) {
-//     for (int8_t j = 0; j < 10; j++) {   
-//       if (game_map[i][j] == 1) display.drawRect(x, y, SIZE, SIZE, WHITE);
-//       if (game_map[i][j] == 0) display.drawRect(x, y, SIZE, SIZE, BLACK);
-//     }
-//   }
-//   display.display();
-// }
 uint8_t generateRandomNumber() {
   return random(0, 7);
 }
