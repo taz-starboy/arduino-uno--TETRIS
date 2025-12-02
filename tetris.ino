@@ -14,6 +14,12 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define HORIZONTAL_MARGIN_PIXELS 2
 #define VERTICAL_MARGIN_PIXELS 4
 
+#define POINTS_TEXT_X_COORDINATES 5
+#define POINTS_TEXT_Y_COORDINATES 6
+#define POINTS_X_COORDINATES 5
+#define POINTS_Y_COORDINATES 17
+uint8_t points = 0;
+
 #define BUTTON_DOWN 2
 #define BUTTON_LEFT 3
 #define BUTTON_RIGHT 4
@@ -125,9 +131,11 @@ void setup() {
   tetraminoe_number = generateRandomNumber(); // move to loop to avoid generating 0 as first
   tetraminoe = getTetraminoeCoordinates(tetraminoe_number, tetraminoe_rotation);
 
-  display.setCursor(5, 5);
+  display.setCursor(POINTS_TEXT_X_COORDINATES, POINTS_TEXT_Y_COORDINATES);
   display.setTextColor(WHITE);
-  display.print("points");
+  display.print("POINTS");
+  display.setCursor(5, 17);
+  display.print(points);
   drawTetraminoe(map_x, map_y, tetraminoe.current);
 }
 
@@ -366,8 +374,10 @@ void cancelRow(uint8_t row_complete, uint8_t game_map[20][10]) {
   for (uint8_t i = row_complete; i > START_MAP_Y; i--) {
     memcpy(game_map[i], game_map[i - 1], 10 * sizeof(uint8_t));
     printBlocks(i, game_map[i]);
-  }
+  }  
   memset(game_map[START_MAP_Y], 0, 10 * sizeof(uint8_t));
+
+  updatePoints(POINTS_X_COORDINATES, POINTS_Y_COORDINATES, &points);
 }
 void printBlocks(uint8_t row_number, uint8_t row[10]) {
   uint8_t y = VERTICAL_MARGIN_PIXELS + row_number * SIZE;
@@ -379,6 +389,12 @@ void printBlocks(uint8_t row_number, uint8_t row[10]) {
     }
     display.drawRect(x, y, SIZE, SIZE, BLACK);
   }
+}
+void updatePoints(uint8_t x_points, uint8_t y_points, uint8_t *points) {
+  (*points) += 10; 
+  display.fillRect(x_points, y_points, 35, 7, BLACK);
+  display.setCursor(x_points, y_points);
+  display.print(*points);  
 }
 uint8_t generateRandomNumber() {
   return random(0, 7);
