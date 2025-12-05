@@ -10,7 +10,7 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // defining a grid 20x10 blocks (6*20) (6*10) (120x60 pixels)
-// tetraminoe starting coordinates in pixels
+// tetromino starting coordinates in pixels
 #define HORIZONTAL_MARGIN_PIXELS 2
 #define VERTICAL_MARGIN_PIXELS 4
 
@@ -38,13 +38,13 @@ uint8_t map_y = START_MAP_Y;
 uint8_t old_map_x = map_x;  // 0
 uint8_t old_map_y = map_y;  // 0
 
-struct Tetraminoe {
+struct Tetromino {
   uint8_t current[8];
   uint8_t max_rotations;
 };
-Tetraminoe tetraminoe;
-uint8_t tetraminoe_number;
-uint8_t tetraminoe_rotation = 0;
+Tetromino tetromino;
+uint8_t tetromino_number;
+uint8_t tetromino_rotation = 0;
 
 uint8_t game_map[20][10] = {
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 
@@ -91,7 +91,6 @@ const uint8_t J_COORDINATES[4][8] PROGMEM = {
 };
 const uint8_t T_COORDINATES[4][8] PROGMEM = {
   {1, 1, 0, 2, 1, 2, 2, 2},
-  //{2, 0, 1, 1, 2, 1, 2, 2},
   {0, 1, 1, 0, 1, 1, 1, 2},
   {0, 0, 1, 0, 2, 0, 1, 1},
   {0, 0, 0, 1, 1, 1, 0, 2}
@@ -128,15 +127,15 @@ void setup() {
   display.drawRect(HORIZONTAL_MARGIN_PIXELS - 1, VERTICAL_MARGIN_PIXELS - 1, 62, START_MAP_Y * SIZE + 1, WHITE); // draw game table
 
   randomSeed(analogRead(A0)); // initialize random seed
-  tetraminoe_number = generateRandomNumber(); // move to loop to avoid generating 0 as first
-  tetraminoe = getTetraminoeCoordinates(tetraminoe_number, tetraminoe_rotation);
+  tetromino_number = generateRandomNumber(); // move to loop to avoid generating 0 as first
+  tetromino = getTetrominoCoordinates(tetromino_number, tetromino_rotation);
 
   display.setCursor(POINTS_TEXT_X_COORDINATES, POINTS_TEXT_Y_COORDINATES);
   display.setTextColor(WHITE);
   display.print("POINTS");
   display.setCursor(5, 17);
   display.print(points);
-  drawTetraminoe(map_x, map_y, tetraminoe.current);
+  drawTetromino(map_x, map_y, tetromino.current);
 }
 
 void loop() {
@@ -144,36 +143,37 @@ void loop() {
   // ROTATION
   if (digitalRead(BUTTON_ROTATION)) {
     delay(150);
-    tetraminoe = rotateTetraminoe(map_x, map_y, tetraminoe, tetraminoe_number, &tetraminoe_rotation);
+    tetromino = rotateTetromino(&map_x, map_y, tetromino, tetromino_number, &tetromino_rotation);
+    old_map_x = map_x;
     last_time = millis();
   }
 
   // GO DOWN AUTOMATICALLY
-  if ((millis() - last_time) >= PAUSE) { // o il pulsante giu e stato premuto
+  if ((millis() - last_time) >= PAUSE) {
     if (map_y > 0) {
-      cancelTetraminoe(old_map_x, old_map_y, tetraminoe.current);
+      cancelTetromino(old_map_x, old_map_y, tetromino.current);
       old_map_x = map_x;
       old_map_y = map_y;
     }
-    // handle stop tetraminoe  
-    drawTetraminoe(map_x, map_y, tetraminoe.current);
+    // handle stop tetromino  
+    drawTetromino(map_x, map_y, tetromino.current);
     
     // update time
     last_time = millis();
     
-    bool go_down = canGoFurtherDown(map_x, map_y, tetraminoe.current);
+    bool go_down = canGoFurtherDown(map_x, map_y, tetromino.current);
     if (!go_down) {
-      printOnMap(map_x, map_y, tetraminoe.current, game_map);
+      printOnMap(map_x, map_y, tetromino.current, game_map);
       
       map_x = START_MAP_X;
       map_y = START_MAP_Y;
       old_map_x = map_x;
       old_map_y = map_y;
 
-      tetraminoe_number = generateRandomNumber();;
-      tetraminoe_rotation = 0;
+      tetromino_number = generateRandomNumber();;
+      tetromino_rotation = 0;
 
-      tetraminoe = getTetraminoeCoordinates(tetraminoe_number, tetraminoe_rotation);
+      tetromino = getTetrominoCoordinates(tetromino_number, tetromino_rotation);
       //return;
     } else {
       map_y++;
@@ -184,28 +184,28 @@ void loop() {
   if (digitalRead(BUTTON_DOWN)) {
     delay(150);
     if (map_y > 0) {
-      cancelTetraminoe(old_map_x, old_map_y, tetraminoe.current);
+      cancelTetromino(old_map_x, old_map_y, tetromino.current);
       old_map_x = map_x;
       old_map_y = map_y;
     } 
-    drawTetraminoe(map_x, map_y, tetraminoe.current);
+    drawTetromino(map_x, map_y, tetromino.current);
     
     // update time
     last_time = millis();
     
-    bool go_down = canGoFurtherDown(map_x, map_y, tetraminoe.current);
+    bool go_down = canGoFurtherDown(map_x, map_y, tetromino.current);
     if (!go_down) {
-      printOnMap(map_x, map_y, tetraminoe.current, game_map);
+      printOnMap(map_x, map_y, tetromino.current, game_map);
       
       map_x = START_MAP_X;
       map_y = START_MAP_Y;
       old_map_x = map_x;
       old_map_y = map_y;
 
-      tetraminoe_number = generateRandomNumber();
-      tetraminoe_rotation = 0;
+      tetromino_number = generateRandomNumber();
+      tetromino_rotation = 0;
 
-      tetraminoe = getTetraminoeCoordinates(tetraminoe_number, tetraminoe_rotation);
+      tetromino = getTetrominoCoordinates(tetromino_number, tetromino_rotation);
     } else {
       map_y++;
     }
@@ -214,11 +214,11 @@ void loop() {
   // BUTTON LEFT
   if (digitalRead(BUTTON_LEFT)) {
     delay(150);    
-    bool go_left = canGoLeft(map_x, map_y, tetraminoe.current, game_map);    
+    bool go_left = canGoLeft(map_x, map_y, tetromino.current, game_map);    
     if (!go_left) return;
-    cancelTetraminoe(old_map_x, old_map_y, tetraminoe.current);
+    cancelTetromino(old_map_x, old_map_y, tetromino.current);
     map_x--;
-    drawTetraminoe(map_x, map_y, tetraminoe.current);
+    drawTetromino(map_x, map_y, tetromino.current);
     old_map_x = map_x;
     old_map_y = map_y;
   }
@@ -226,11 +226,11 @@ void loop() {
   // BUTTON RIGHT
   if (digitalRead(BUTTON_RIGHT)) {
     delay(150);
-    bool go_right = canGoRight(map_x, map_y, tetraminoe.current, game_map);
+    bool go_right = canGoRight(map_x, map_y, tetromino.current, game_map);
     if (!go_right) return;
-    cancelTetraminoe(old_map_x, old_map_y, tetraminoe.current);
+    cancelTetromino(old_map_x, old_map_y, tetromino.current);
     map_x++;
-    drawTetraminoe(map_x, map_y, tetraminoe.current);
+    drawTetromino(map_x, map_y, tetromino.current);
     old_map_x = map_x;
     old_map_y = map_y;
   }
@@ -241,124 +241,127 @@ void loop() {
 
 
 // **** FUNCTIONS ****
-Tetraminoe getTetraminoeCoordinates(uint8_t tetraminoe_number, uint8_t tetraminoe_rotation) { // questa funzione ritorna solo l'array con la giusta rotazione
-  Tetraminoe tetraminoe;
+Tetromino getTetrominoCoordinates(uint8_t tetromino_number, uint8_t tetromino_rotation) { // questa funzione ritorna solo l'array con la giusta rotazione
+  Tetromino tetromino;
 
-  switch (tetraminoe_number) {
+  switch (tetromino_number) {
     case 0: // square      
-      memcpy_P(tetraminoe.current, SQUARE_COORDINATES, 8);
-      tetraminoe.max_rotations = 0;
+      memcpy_P(tetromino.current, SQUARE_COORDINATES, 8);
+      tetromino.max_rotations = 0;
       break;
     case 1: // s
-      memcpy_P(tetraminoe.current, S_COORDINATES[tetraminoe_rotation], 8);
-      tetraminoe.max_rotations = 2;
+      memcpy_P(tetromino.current, S_COORDINATES[tetromino_rotation], 8);
+      tetromino.max_rotations = 2;
       break;
     case 2:
-      memcpy_P(tetraminoe.current, Z_COORDINATES[tetraminoe_rotation], 8);
-      tetraminoe.max_rotations = 2;
+      memcpy_P(tetromino.current, Z_COORDINATES[tetromino_rotation], 8);
+      tetromino.max_rotations = 2;
       break;
     case 3:
-      memcpy_P(tetraminoe.current, L_COORDINATES[tetraminoe_rotation], 8);
-      tetraminoe.max_rotations = 4;
+      memcpy_P(tetromino.current, L_COORDINATES[tetromino_rotation], 8);
+      tetromino.max_rotations = 4;
       break;
     case 4:
-      memcpy_P(tetraminoe.current, J_COORDINATES[tetraminoe_rotation], 8);
-      tetraminoe.max_rotations = 4;
+      memcpy_P(tetromino.current, J_COORDINATES[tetromino_rotation], 8);
+      tetromino.max_rotations = 4;
       break;
     case 5:
-      memcpy_P(tetraminoe.current, T_COORDINATES[tetraminoe_rotation], 8);
-      tetraminoe.max_rotations = 4;
+      memcpy_P(tetromino.current, T_COORDINATES[tetromino_rotation], 8);
+      tetromino.max_rotations = 4;
       break;
     case 6:
-      memcpy_P(tetraminoe.current, I_COORDINATES[tetraminoe_rotation], 8);
-      tetraminoe.max_rotations = 2;
+      memcpy_P(tetromino.current, I_COORDINATES[tetromino_rotation], 8);
+      tetromino.max_rotations = 2;
       break;
     default:
-      Serial.println(F("No match for a tetraminoe."));
+      Serial.println(F("No match for a tetromino."));
   }
-  return tetraminoe;
+  return tetromino;
 }
 
-Tetraminoe rotateTetraminoe(uint8_t map_x, uint8_t map_y, Tetraminoe tetraminoe, uint8_t tetraminoe_number, uint8_t *tetraminoe_rotation) { // rotation occurs on same position 
-  uint8_t new_rotation = *tetraminoe_rotation;
+Tetromino rotateTetromino(uint8_t *map_x, uint8_t map_y, Tetromino tetromino, uint8_t tetromino_number, uint8_t *tetromino_rotation) { // rotation occurs on same position
+  
+  uint8_t new_rotation = *tetromino_rotation;
   new_rotation++;
 
-  if (new_rotation >= tetraminoe.max_rotations) new_rotation = 0;
+  if (new_rotation >= tetromino.max_rotations) new_rotation = 0;
 
-  Tetraminoe turned_tetraminoe = getTetraminoeCoordinates(tetraminoe_number, new_rotation);
-  bool okToRotate = validateRotation(map_x, map_y, turned_tetraminoe.current);
+  Tetromino turned_tetromino = getTetrominoCoordinates(tetromino_number, new_rotation);
+  bool okToRotate = validateRotation(map_x, map_y, turned_tetromino.current);
   if (okToRotate) {
-    cancelTetraminoe(old_map_x, old_map_y, tetraminoe.current);
-    drawTetraminoe(old_map_x, old_map_y, turned_tetraminoe.current);
-    *tetraminoe_rotation = new_rotation;    
-    return turned_tetraminoe;
+    cancelTetromino(old_map_x, old_map_y, tetromino.current);
+    drawTetromino(*map_x, old_map_y, turned_tetromino.current);
+    *tetromino_rotation = new_rotation;    
+    return turned_tetromino;
   }
-  return tetraminoe; 
+  return tetromino; 
 }
-bool validateRotation(uint8_t map_x, uint8_t map_y, const uint8_t tetraminoe_coordinates[8]) {
+bool validateRotation(uint8_t *map_x, uint8_t map_y, const uint8_t tetromino_coordinates[8]) {
   for (uint8_t i = 0; i < 8; i += 2) {
-    int8_t x_value = map_x + tetraminoe_coordinates[i];
-    uint8_t y_value = map_y + tetraminoe_coordinates[i + 1];
+    int8_t x_value = (*map_x) + tetromino_coordinates[i];
+    uint8_t y_value = map_y + tetromino_coordinates[i + 1];
     if (x_value < 0) return false;
-    if (x_value > 9) return false;
+    if (x_value > 9) {
+      return validateRotation(&(--(*map_x)), map_y, tetromino_coordinates);
+    }
     if (game_map[y_value][x_value] == 1) return false;
   }
   return true;
 }
-bool canGoFurtherDown(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8]) {
+bool canGoFurtherDown(uint8_t x, uint8_t y, const uint8_t tetromino_coordinates[8]) {
   for (uint8_t i = 0; i < 8; i += 2) {
-    uint8_t x_value = x + tetraminoe_coordinates[i];
-    uint8_t y_value = y + tetraminoe_coordinates[i + 1];
+    uint8_t x_value = x + tetromino_coordinates[i];
+    uint8_t y_value = y + tetromino_coordinates[i + 1];
     if (y_value == 19) return false;
     if (game_map[y_value + 1][x_value] == 1) return false;
   }
   return true;
 }
-bool canGoLeft(uint8_t map_x, uint8_t map_y, const uint8_t tetraminoe_coordinates[8], uint8_t game_map[20][10]) {
+bool canGoLeft(uint8_t map_x, uint8_t map_y, const uint8_t tetromino_coordinates[8], uint8_t game_map[20][10]) {
   if (map_x < 1) return false;
   for (uint8_t i = 0; i < 8; i += 2) {
-    int8_t x_value = map_x + tetraminoe_coordinates[i];
+    int8_t x_value = map_x + tetromino_coordinates[i];
     if (x_value < 1) return false;
-    uint8_t y_value = map_y + tetraminoe_coordinates[i + 1];    
+    uint8_t y_value = map_y + tetromino_coordinates[i + 1];    
     if (game_map[y_value][x_value - 1] == 1) return false;
   }
   return true;
 }
-bool canGoRight(uint8_t map_x, uint8_t map_y, const uint8_t tetraminoe_coordinates[8], uint8_t game_map[20][10]) {
+bool canGoRight(uint8_t map_x, uint8_t map_y, const uint8_t tetromino_coordinates[8], uint8_t game_map[20][10]) {
   if (map_x > 8) return false;
   for (uint8_t i = 0; i < 8; i += 2) {
-    uint8_t x_value = map_x + tetraminoe_coordinates[i];
+    uint8_t x_value = map_x + tetromino_coordinates[i];
     if (x_value > 8) return false;
-    uint8_t y_value = map_y + tetraminoe_coordinates[i + 1];    
+    uint8_t y_value = map_y + tetromino_coordinates[i + 1];    
     if (game_map[y_value][x_value + 1] == 1) return false;
   }
   return true;
 }
-void printOnMap(uint8_t x, uint8_t y, const uint8_t tetraminoe_coordinates[8], uint8_t game_map[20][10]) {
+void printOnMap(uint8_t x, uint8_t y, const uint8_t tetromino_coordinates[8], uint8_t game_map[20][10]) {
   for (uint8_t i = 0; i < 8; i += 2) {
-    uint8_t var_x = x + tetraminoe_coordinates[i];
-    uint8_t var_y = y + tetraminoe_coordinates[i + 1]; 
+    uint8_t var_x = x + tetromino_coordinates[i];
+    uint8_t var_y = y + tetromino_coordinates[i + 1]; 
     game_map[var_y][var_x] = 1;
   }
 }
-void drawTetraminoe(uint8_t map_x, uint8_t map_y, const uint8_t tetraminoe_coordinates[8]) {
+void drawTetromino(uint8_t map_x, uint8_t map_y, const uint8_t tetromino_coordinates[8]) {
   // conversion to real coordinates in pixels
   uint8_t x = HORIZONTAL_MARGIN_PIXELS + map_x * SIZE;
   uint8_t y = VERTICAL_MARGIN_PIXELS + map_y * SIZE;
   for (uint8_t i = 0; i < 8; i += 2) {
-    uint8_t start_x = x + tetraminoe_coordinates[i] * SIZE;
-    uint8_t start_y = y + tetraminoe_coordinates[i + 1] * SIZE;
+    uint8_t start_x = x + tetromino_coordinates[i] * SIZE;
+    uint8_t start_y = y + tetromino_coordinates[i + 1] * SIZE;
     display.drawRect(start_x, start_y, SIZE, SIZE, WHITE);
   }
   display.display();
 }
-void cancelTetraminoe(uint8_t map_x, uint8_t map_y, const uint8_t tetraminoe_coordinates[8]) {
+void cancelTetromino(uint8_t map_x, uint8_t map_y, const uint8_t tetromino_coordinates[8]) {
   // conversion to real coordinates in pixels
   uint8_t x = HORIZONTAL_MARGIN_PIXELS + map_x * SIZE;
   uint8_t y = VERTICAL_MARGIN_PIXELS + map_y * SIZE;  
   for (uint8_t i = 0; i < 8; i += 2) {
-    uint8_t start_x = x + tetraminoe_coordinates[i] * SIZE;
-    uint8_t start_y = y + tetraminoe_coordinates[i + 1] * SIZE;
+    uint8_t start_x = x + tetromino_coordinates[i] * SIZE;
+    uint8_t start_y = y + tetromino_coordinates[i + 1] * SIZE;
     display.drawRect(start_x, start_y, SIZE, SIZE, BLACK);
   }
 }
