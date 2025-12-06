@@ -31,6 +31,7 @@ uint8_t points = 0;
 #define BUZZER 13
 
 #define PAUSE 1000
+#define POINTS_TO_WIN 200
 
 #define START_MAP_X 4
 #define START_MAP_Y 4
@@ -52,6 +53,8 @@ uint8_t tetromino_number;
 Tetromino next_tetromino;
 uint8_t next_tetromino_number;
 uint8_t tetromino_rotation = 0;
+
+bool is_game_over = false;
 
 uint8_t game_map[20][10] = {
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 
@@ -150,6 +153,27 @@ void setup() {
 }
 
 void loop() {
+
+  // GAME OVER
+  if (is_game_over) {
+    display.clearDisplay();
+    display.drawRect(HORIZONTAL_MARGIN_PIXELS - 1, VERTICAL_MARGIN_PIXELS - 1, 62, 122, WHITE);
+    display.setCursor(5, 42);
+    display.print("GAME OVER");
+    display.display();
+    for(;;);
+  }
+
+  // WINNER
+  if (points >= POINTS_TO_WIN) {
+    display.clearDisplay();
+    display.drawRect(HORIZONTAL_MARGIN_PIXELS - 1, VERTICAL_MARGIN_PIXELS - 1, 62, 122, WHITE);
+    display.setCursor(11, 42);
+    display.print("YOU WIN");
+    display.display();
+    for(;;);
+  }
+  
   
   // ROTATION
   if (digitalRead(BUTTON_ROTATION)) {
@@ -168,14 +192,16 @@ void loop() {
     }
     // handle stop tetromino  
     drawTetromino(map_x, map_y, block_size, tetromino.current);
-    
+
     // update time
     last_time = millis();
-    
+
     bool go_down = canGoFurtherDown(map_x, map_y, tetromino.current);
     if (!go_down) {
       printOnMap(map_x, map_y, tetromino.current, game_map);
-      
+      is_game_over = checkGameOver(game_map, next_tetromino_number);
+      if (is_game_over) return;
+
       map_x = START_MAP_X;
       map_y = START_MAP_Y;
       old_map_x = map_x;
@@ -193,7 +219,6 @@ void loop() {
       next_tetromino_number = generateRandomNumber();
       next_tetromino = getTetrominoCoordinates(next_tetromino_number, tetromino_rotation);
       drawTetromino(NEXT_TETROMINO_PREVIEW_X_COORDINATES, NEXT_TETROMINO_PREVIEW_Y_COORDINATES, block_preview_size, next_tetromino.current);
-      //tetromino = getTetrominoCoordinates(tetromino_number, tetromino_rotation);
     } else {
       map_y++;
     }    
@@ -208,14 +233,16 @@ void loop() {
       old_map_y = map_y;
     } 
     drawTetromino(map_x, map_y, block_size, tetromino.current);
-    
+
     // update time
     last_time = millis();
-    
+
     bool go_down = canGoFurtherDown(map_x, map_y, tetromino.current);
     if (!go_down) {
       printOnMap(map_x, map_y, tetromino.current, game_map);
-      
+      is_game_over = checkGameOver(game_map, next_tetromino_number);
+      if (is_game_over) return;
+
       map_x = START_MAP_X;
       map_y = START_MAP_Y;
       old_map_x = map_x;
@@ -233,12 +260,11 @@ void loop() {
       next_tetromino_number = generateRandomNumber();
       next_tetromino = getTetrominoCoordinates(next_tetromino_number, tetromino_rotation);
       drawTetromino(NEXT_TETROMINO_PREVIEW_X_COORDINATES, NEXT_TETROMINO_PREVIEW_Y_COORDINATES, block_preview_size, next_tetromino.current);
-      //tetromino = getTetrominoCoordinates(tetromino_number, tetromino_rotation);
     } else {
       map_y++;
     }
   }
-  
+
   // BUTTON LEFT
   if (digitalRead(BUTTON_LEFT)) {
     delay(150);    
@@ -265,6 +291,8 @@ void loop() {
 
   // CHECK FOR COMPLETE ROWS
   checkCompleteRow(game_map);
+  
+  
 }
 
 
@@ -365,10 +393,10 @@ bool canGoRight(uint8_t map_x, uint8_t map_y, const uint8_t tetromino_coordinate
   }
   return true;
 }
-void printOnMap(uint8_t x, uint8_t y, const uint8_t tetromino_coordinates[8], uint8_t game_map[20][10]) {
+void printOnMap(uint8_t map_x, uint8_t map_y, const uint8_t tetromino_coordinates[8], uint8_t game_map[20][10]) {
   for (uint8_t i = 0; i < 8; i += 2) {
-    uint8_t var_x = x + tetromino_coordinates[i];
-    uint8_t var_y = y + tetromino_coordinates[i + 1]; 
+    uint8_t var_x = map_x + tetromino_coordinates[i];
+    uint8_t var_y = map_y + tetromino_coordinates[i + 1]; 
     game_map[var_y][var_x] = 1;
   }
 }
@@ -436,6 +464,10 @@ void updatePoints(uint8_t x_points, uint8_t y_points, uint8_t *points) {
   display.fillRect(x_points, y_points, 35, 7, BLACK);
   display.setCursor(x_points, y_points);
   display.print(*points);  
+}
+bool checkGameOver(uint8_t game_map[20][10], uint8_t next_tetromino_number) {
+  if ((game_map[4][4] || game_map[4][5] || game_map[5][4] || game_map[5][5]) && next_tetromino_number != 0) return true;
+  return false;
 }
 uint8_t generateRandomNumber() {
   return random(0, 7);
