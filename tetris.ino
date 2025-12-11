@@ -81,14 +81,14 @@ void setup() {
   display.drawRect(HORIZONTAL_MARGIN_PIXELS - 1, VERTICAL_MARGIN_PIXELS - 1, GAME_CONTAINER_WIDTH, START_MAP_Y * block_size + 1, WHITE);
 
   randomSeed(analogRead(A0)); // initialize random seed
-  tetromino_number = generateRandomNumber(); // move to loop to avoid generating 0 as first
+  tetromino_number = generateRandomNumber();
   tetromino = getTetrominoCoordinates(tetromino_number, tetromino_rotation);
   next_tetromino_number = generateRandomNumber();
   next_tetromino = getTetrominoCoordinates(next_tetromino_number, tetromino_rotation);
 
   display.setCursor(POINTS_TEXT_X_COORDINATES, POINTS_TEXT_Y_COORDINATES);
   display.setTextColor(WHITE);
-  display.print("POINTS");
+  display.print(POINTS_TEXT);
   display.setCursor(POINTS_X_COORDINATES, POINTS_Y_COORDINATES);
   display.print(points);
   drawTetromino(NEXT_TETROMINO_PREVIEW_X_COORDINATES, NEXT_TETROMINO_PREVIEW_Y_COORDINATES, block_preview_size, next_tetromino.current);

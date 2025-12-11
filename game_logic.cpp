@@ -4,7 +4,7 @@
 #include "tetrominoes_coordinates.h"
 
 
-Tetromino getTetrominoCoordinates(uint8_t tetromino_number, uint8_t tetromino_rotation) { // questa funzione ritorna solo l'array con la giusta rotazione
+Tetromino getTetrominoCoordinates(uint8_t tetromino_number, uint8_t tetromino_rotation) {
   Tetromino tetromino;
 
   switch (tetromino_number) {
