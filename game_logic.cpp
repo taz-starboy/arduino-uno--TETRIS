@@ -127,16 +127,6 @@ void cancelTetromino(uint8_t map_x, uint8_t map_y, uint8_t block_size, const uin
     display.drawRect(start_x, start_y, block_size, block_size, BLACK);
   }
 }
-void cancelNextTetromino(uint8_t map_x, uint8_t map_y, const uint8_t tetromino_coordinates[8]) {
-  // conversion to real coordinates in pixels
-  uint8_t x = HORIZONTAL_MARGIN_PIXELS + map_x * 4;
-  uint8_t y = VERTICAL_MARGIN_PIXELS + map_y * 4;  
-  for (uint8_t i = 0; i < 8; i += 2) {
-    uint8_t start_x = x + tetromino_coordinates[i] * 4;
-    uint8_t start_y = y + tetromino_coordinates[i + 1] * 4;
-    display.drawRect(start_x, start_y, 4, 4, BLACK);
-  }
-}
 void checkCompleteRow(uint8_t game_map[20][10]) {
   for (int8_t i = 19; i >= 0; i--) {
     for (uint8_t j = 0; j < 10; j++) {
