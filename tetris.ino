@@ -3,7 +3,7 @@
 #include "tetrominoes_coordinates.h"
 #include "game_logic.h"
 #include "display.h"
-
+#include "theme.h"
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -12,6 +12,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define BUTTON_RIGHT    4
 #define BUTTON_ROTATION 5
 #define BUZZER          13
+uint8_t buzzer = BUZZER;
 
 uint8_t block_size = BLOCK_SIZE;
 uint8_t block_preview_size = BLOCK_PREVIEW_SIZE;
@@ -55,6 +56,8 @@ bool is_game_over = false;
 
 uint32_t last_time = millis();
 
+uint32_t music_pause = 0;
+
 // **** START ****
 void setup() {
   Serial.begin(9600);
@@ -92,10 +95,25 @@ void setup() {
   display.setCursor(POINTS_X_COORDINATES, POINTS_Y_COORDINATES);
   display.print(points);
   drawTetromino(NEXT_TETROMINO_PREVIEW_X_COORDINATES, NEXT_TETROMINO_PREVIEW_Y_COORDINATES, block_preview_size, next_tetromino.current);
-  drawTetromino(map_x, map_y, block_size, tetromino.current);
+  drawTetromino(map_x, map_y, block_size, tetromino.current);  
 }
 
+bool lastLeft = false;
+bool lastRight = false;
+bool lastDown = false;
+bool lastRotate = false;
+
 void loop() {
+
+  bool left = digitalRead(BUTTON_LEFT);
+  bool right = digitalRead(BUTTON_RIGHT);
+  bool down = digitalRead(BUTTON_DOWN);
+  bool rotate = digitalRead(BUTTON_ROTATION);
+
+  // THEME
+  if (millis() - music_pause >= noteDuration) {
+    playTheme2(&music_pause);
+  }
 
   // GAME OVER
   if (is_game_over) {
@@ -119,8 +137,9 @@ void loop() {
   
   
   // ROTATION
-  if (digitalRead(BUTTON_ROTATION)) {
-    delay(150);
+  //if (digitalRead(BUTTON_ROTATION)) {
+  if (rotate && !lastRotate) {
+    //delay(150);
     tetromino = rotateTetromino(&map_x, map_y, tetromino, tetromino_number, &tetromino_rotation, game_map);
     old_map_x = map_x;
     last_time = millis();
@@ -168,8 +187,9 @@ void loop() {
   }
 
   // BUTTON DOWN
-  if (digitalRead(BUTTON_DOWN)) {
-    delay(150);
+  //if (digitalRead(BUTTON_DOWN)) {
+  if (down && !lastDown) {
+    //delay(150);
     if (map_y > 0) {
       cancelTetromino(old_map_x, old_map_y, block_size, tetromino.current);
       old_map_x = map_x;
@@ -209,8 +229,9 @@ void loop() {
   }
 
   // BUTTON LEFT
-  if (digitalRead(BUTTON_LEFT)) {
-    delay(150);    
+  //if (digitalRead(BUTTON_LEFT)) {
+  if (left && !lastLeft) {
+    //delay(150);    
     bool go_left = canGoLeft(map_x, map_y, tetromino.current, game_map);    
     if (!go_left) return;
     cancelTetromino(old_map_x, old_map_y, block_size, tetromino.current);
@@ -221,8 +242,9 @@ void loop() {
   }
 
   // BUTTON RIGHT
-  if (digitalRead(BUTTON_RIGHT)) {
-    delay(150);
+  //if (digitalRead(BUTTON_RIGHT)) {
+  if (right && !lastRight) {
+    //delay(150);
     bool go_right = canGoRight(map_x, map_y, tetromino.current, game_map);
     if (!go_right) return;
     cancelTetromino(old_map_x, old_map_y, block_size, tetromino.current);
@@ -231,6 +253,13 @@ void loop() {
     old_map_x = map_x;
     old_map_y = map_y;
   }
+
+
+  lastLeft = left;
+  lastRight = right;
+  lastDown = down;
+  lastRotate = rotate;
+
 
   // CHECK FOR COMPLETE ROWS
   checkCompleteRow(game_map);  
