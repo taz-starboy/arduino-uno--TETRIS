@@ -1,12 +1,7 @@
 #pragma once
 #include <stdio.h>
-/* 
-  Tetris theme - (Korobeiniki) 
-  Connect a piezo buzzer or speaker to pin 11 or select a new pin.
-  More songs available at https://github.com/robsoncouto/arduino-songs                                            
-                                              
-                                              Robson Couto, 2019
-*/
+
+#define TEMPO     144 // change this to adjust theme speed
 
 #define NOTE_B0   31
 #define NOTE_C1   33
@@ -99,9 +94,7 @@
 #define NOTE_DS8  4978
 #define REST      0
 
-extern uint8_t tempo;     // theme.cpp
-extern uint8_t buzzer;    // tetris.ino
-extern int16_t noteDuration;
+extern uint8_t buzzer;        // tetris.ino
+extern int16_t noteDuration;  // theme.cpp
 
-void playTheme();
-void playTheme2(uint32_t *music_pause);
+void playTheme(uint32_t *music_pause);

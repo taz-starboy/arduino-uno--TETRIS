@@ -3,16 +3,38 @@
 #include "display.h"
 #include "tetrominoes_coordinates.h"
 
+bool buttonAction(uint8_t button_pin, ButtonState *button) {  
+  bool pressed = digitalRead(button_pin);
 
+  if (!pressed) {
+    button->held = 0;
+    return false;
+  }
+
+  if (pressed && !button->held) {
+    button->held = 1;
+    button->pressTime = millis();
+    button->lastRepeat = millis();
+    return true; // first tap
+  }
+
+  if (pressed && button->held) {
+    if (millis() - button->pressTime > 250 && millis() - button->lastRepeat > 70) {
+      button->lastRepeat = millis();
+      return true; // repeat
+    }
+  }
+  return false;  
+}
 Tetromino getTetrominoCoordinates(uint8_t tetromino_number, uint8_t tetromino_rotation) {
   Tetromino tetromino;
 
   switch (tetromino_number) {
-    case 0: // square      
+    case 0:     
       memcpy_P(tetromino.current, SQUARE_COORDINATES, 8);
       tetromino.max_rotations = 0;
       break;
-    case 1: // s
+    case 1:
       memcpy_P(tetromino.current, S_COORDINATES[tetromino_rotation], 8);
       tetromino.max_rotations = 2;
       break;

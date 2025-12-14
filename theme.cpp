@@ -1,16 +1,16 @@
 #include <arduino.h>
 #include "theme.h"
 
-// change this to make the song slower or faster
-uint8_t tempo = 144;
-
 // notes of the moledy followed by the duration.
 // a 4 means a quarter note, 8 an eighteenth , 16 sixteenth, so on
 // !!negative numbers are used to represent dotted notes,
 // so -4 means a dotted quarter note, that is, a quarter plus an eighteenth!!
-const int16_t melody[] PROGMEM = {
-  //Based on the arrangement at https://www.flutetunes.com/tunes.php?id=192
-  
+const int16_t melody[] PROGMEM = {  
+  /* 
+    Based on the arrangement at https://www.flutetunes.com/tunes.php?id=192
+    More songs available at https://github.com/robsoncouto/arduino-songs                                       
+    Robson Couto, 2019 
+  */
   NOTE_E5, 4,  NOTE_B4,8,  NOTE_C5,8,  NOTE_D5,4,  NOTE_C5,8,  NOTE_B4,8,
   NOTE_A4, 4,  NOTE_A4,8,  NOTE_C5,8,  NOTE_E5,4,  NOTE_D5,8,  NOTE_C5,8,
   NOTE_B4, -4,  NOTE_C5,8,  NOTE_D5,4,  NOTE_E5,4,
@@ -42,16 +42,17 @@ const int16_t melody[] PROGMEM = {
   NOTE_C5, 4,  NOTE_A4,4,  NOTE_A4,4, REST, 4,
 };
 
-// this calculates the duration of a whole note in ms (60s/tempo)*4 beats
-int16_t wholenote = (60000 * 4) / tempo;
 int16_t noteDuration = 0;
 uint8_t thisNote;
-// sizeof gives the number of bytes, each int value is composed of two bytes (16 bits)
-// there are two values per note (pitch and duration), so for each note there are four bytes
-int16_t melody_length = sizeof(melody) / sizeof(melody[0]);
 
-void playTheme2(uint32_t *music_pause) {
-  if (thisNote >= melody_length) {
+void playTheme(uint32_t *music_pause) {
+
+  // this calculates the duration of a whole note in ms (60s/TEMPO)*4 beats
+  int16_t wholenote = (60000 * 4) / TEMPO;
+
+  // sizeof gives the number of bytes, each int value is composed of two bytes (16 bits)
+  // there are two values per note (pitch and duration), so for each note there are four bytes
+  if (thisNote >= (sizeof(melody) / sizeof(melody[0]))) {
     thisNote = 0;
     noTone(buzzer);
     return;
