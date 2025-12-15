@@ -11,12 +11,10 @@ struct Tetromino {
   uint8_t max_rotations;
 };
 struct ButtonState {
-  bool held : 1;
-  uint32_t pressTime = 0;
-  uint32_t lastRepeat = 0;
+  bool held = false;  
 };
 
-bool buttonAction(uint8_t pin, ButtonState *button);
+bool buttonAction(uint8_t pin, ButtonState *button, uint32_t *pressTime, uint32_t *lastRepeat);
 Tetromino getTetrominoCoordinates(uint8_t tetromino_number, uint8_t tetromino_rotation);
 Tetromino rotateTetromino(uint8_t *map_x, uint8_t map_y, Tetromino tetromino, uint8_t tetromino_number, uint8_t *tetromino_rotation, uint8_t game_map[20][10]);
 bool validateRotation(uint8_t *map_x, uint8_t map_y, const uint8_t tetromino_coordinates[8], uint8_t game_map[20][10]);

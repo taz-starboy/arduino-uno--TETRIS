@@ -19,6 +19,9 @@ ButtonState btn_right;
 ButtonState btn_down;
 ButtonState btn_rotate;
 
+uint32_t pressTime;
+uint32_t lastRepeat;
+
 uint8_t block_size = BLOCK_SIZE;
 uint8_t block_preview_size = BLOCK_PREVIEW_SIZE;
 
@@ -60,6 +63,8 @@ uint8_t points;
 bool is_game_over;
 uint32_t last_time;
 uint32_t music_pause;
+bool play_theme;
+
 
 // **** START ****
 void setup() {
@@ -109,15 +114,16 @@ void setup() {
   last_time = millis();
   tetromino_rotation = 0;
   music_pause = 0;
+  play_theme = false;   // change this to play tetris theme
 }
 
 
 void loop() {
 
   // THEME
-  if (millis() - music_pause >= noteDuration) {
+  if (play_theme && millis() - music_pause >= noteDuration) {
     playTheme(&music_pause);
-  }
+  }  
 
   // GAME OVER
   if (is_game_over) {
@@ -141,8 +147,8 @@ void loop() {
   
   
   // ROTATION
-  if (buttonAction(BUTTON_ROTATION, &btn_rotate)) {    
-    tetromino = rotateTetromino(&map_x, map_y, tetromino, tetromino_number, &tetromino_rotation, game_map);
+  if (buttonAction(BUTTON_ROTATION, &btn_rotate, &pressTime, &lastRepeat)) {   
+    tetromino = rotateTetromino(&map_x, map_y, tetromino, tetromino_number, &tetromino_rotation, game_map);    
     old_map_x = map_x;
     last_time = millis();
   }
@@ -189,7 +195,7 @@ void loop() {
   }
 
   // BUTTON DOWN
-  if (buttonAction(BUTTON_DOWN, &btn_down)) {
+  if (buttonAction(BUTTON_DOWN, &btn_down, &pressTime, &lastRepeat)) {
     if (map_y > 0) {
       cancelTetromino(old_map_x, old_map_y, block_size, tetromino.current);
       old_map_x = map_x;
@@ -229,7 +235,7 @@ void loop() {
   }
 
   // BUTTON LEFT
-  if (buttonAction(BUTTON_LEFT, &btn_left)) {    
+  if (buttonAction(BUTTON_LEFT, &btn_left, &pressTime, &lastRepeat)) {    
     bool go_left = canGoLeft(map_x, map_y, tetromino.current, game_map);    
     if (!go_left) return;
     cancelTetromino(old_map_x, old_map_y, block_size, tetromino.current);
@@ -240,7 +246,7 @@ void loop() {
   }
 
   // BUTTON RIGHT
-  if (buttonAction(BUTTON_RIGHT, &btn_right)) {
+  if (buttonAction(BUTTON_RIGHT, &btn_right, &pressTime, &lastRepeat)) {
     bool go_right = canGoRight(map_x, map_y, tetromino.current, game_map);
     if (!go_right) return;
     cancelTetromino(old_map_x, old_map_y, block_size, tetromino.current);
